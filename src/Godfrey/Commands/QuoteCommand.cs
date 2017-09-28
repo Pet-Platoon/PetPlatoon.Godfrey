@@ -5,6 +5,7 @@ using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using Godfrey.Exceptions;
 using Godfrey.Helpers;
 using Godfrey.Models.Context;
 using Godfrey.Models.Quotes;
@@ -24,14 +25,11 @@ namespace Godfrey.Commands
         [Command("random")]
         public async Task RandomQuoteAsync(CommandContext ctx)
         {
-            await ctx.Message.DeleteAsync();
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var currentTime = DateTime.UtcNow;
                 var lastRandomQuote = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.last", new DateTime(), uow);
                 var quoteDowntime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.downtime", TimeSpan.FromSeconds(300), uow);
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
 
                 if (lastRandomQuote.Add(quoteDowntime) > currentTime)
                 {
@@ -41,23 +39,16 @@ namespace Godfrey.Commands
 
                 lastRandomQuote = DateTime.UtcNow;
                 await ConfigHelper.SetValueAsync(ctx.Guild, "quote.time.last", lastRandomQuote, uow);
-
-                DiscordMessage msg;
+                
                 if (!await uow.Quotes.AnyAsync(x => x.GuildId == ctx.Guild.Id))
                 {
-                    msg = await ctx.RespondAsync("Es wurden keine Quotes gefunden.");
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
-                    return;
+                    throw new MissingQuotesException("Es wurden keine Quotes gefunden");
                 }
 
                 var quote = await uow.Quotes.Where(x => x.GuildId == ctx.Guild.Id).OrderBy(x => Butler.RandomGenerator.Next()).FirstOrDefaultAsync();
                 if (quote == null)
                 {
-                    msg = await ctx.RespondAsync("Irgendwas ist schief gelaufen.");
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
-                    return;
+                    throw new Exception("Unexpected error occurred. Quote is null after quote count check");
                 }
 
                 var embed = new DiscordEmbedBuilder()
@@ -78,60 +69,61 @@ namespace Godfrey.Commands
         [Command("add")]
         public async Task AddQuoteAsync(CommandContext ctx, ulong id)
         {
-            await ctx.Message.DeleteAsync();
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var allowedUsers = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users", new ulong[] { });
                 var allowedRoles = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles", new ulong[] { });
                 var blockedUsers = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users.blocked", new ulong[] { });
                 var blockedRoles = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles.blocked", new ulong[] { });
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
-                DiscordMessage msg;
 
                 if (blockedUsers.Any(x => x == ctx.User.Id) || ctx.Member.Roles.Any(x => blockedRoles.Contains(x.Id)))
                 {
-                    msg = await ctx.RespondAsync("Du bist ausgeschlossen.");
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
-                    return;
+                    throw new UsageBlockedException("Du bist von der Nutzung ausgeschlossen.");
                 }
 
-                if ((allowedUsers.Any() || allowedRoles.Any()) && !(allowedUsers.Any(x => x == ctx.User.Id) && ctx.Member.Roles.Any(x => allowedRoles.Contains(x.Id))))
+                // ctx.Member.Roles.Any(x => allowedRoles.Contains(x.Id))
+                if (allowedRoles.Any() && !allowedUsers.Any())
                 {
-                    msg = await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
-                    return;
+                    if (!ctx.Member.Roles.Any(x => allowedRoles.Contains(x.Id)))
+                    {
+                        throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
+                    }
+                }
+
+                if (!allowedRoles.Any() && allowedUsers.Any())
+                {
+                    if (allowedUsers.All(x => x != ctx.User.Id))
+                    {
+                        throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
+                    }
+                }
+
+                if (allowedRoles.Any() && allowedUsers.Any())
+                {
+                    if (!ctx.Member.Roles.Any(x => allowedRoles.Contains(x.Id)) && allowedUsers.All(x => x != ctx.User.Id))
+                    {
+                        throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
+                    }
                 }
 
                 var message = await ctx.Channel.GetMessageAsync(id);
 
                 if (message == null)
                 {
-                    msg = await ctx.RespondAsync("Ich kann keine Nachricht mit dieser Id in diesem Channel finden.");
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
-                    return;
+                    throw new Exception("Es wurde keine Nachricht mit dieser Id in diesem Channel gefunden.");
                 }
 
                 if (message.Author.Id == ctx.Member.Id && !ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
                 {
-                    msg = await ctx.RespondAsync("Du darfst dich nicht selber quoten!");
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
-                    return;
+                    throw new Exception("Du darfst dich nicht selber quoten!");
                 }
 
                 if (await uow.Quotes.AnyAsync(x => x.MessageId == id))
                 {
-                    msg = await ctx.RespondAsync("Diese Nachricht wurde bereits gequoted.");
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
-                    return;
+                    throw new Exception("Diese Nachricht wurde bereits gequoted.");
                 }
 
-                msg = await ctx.RespondAsync("Füge Quote hinzu...");
+                var msg = await ctx.RespondAsync("Füge Quote hinzu...");
 
                 var quote = new Quote
                 {
@@ -158,8 +150,6 @@ namespace Godfrey.Commands
                     .Build();
 
                 await msg.ModifyAsync($"Quote hinzugefügt [#{entity.Id}]:", embed);
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
             }
         }
 
@@ -172,30 +162,22 @@ namespace Godfrey.Commands
         [Command("grantrole")]
         public async Task GrantAsync(CommandContext ctx, DiscordRole role)
         {
-            await ctx.Message.DeleteAsync();
-
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
             }
-
-            DiscordEmbedBuilder embedBuilder;
-            DiscordMessage msg;
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
                 var allowedRoles = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles", new ulong[] { }, uow)).ToList();
+                DiscordEmbedBuilder embedBuilder;
 
                 if (allowedRoles.Contains(role.Id))
                 {
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Red)
                         .WithDescription($"Die Rolle {role.Mention} kann bereits Quotes hinzufügen.");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
                 
@@ -205,39 +187,29 @@ namespace Godfrey.Commands
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Die Rolle {role.Mention} kann nun Quotes hinzufügen.");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
+                await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
 
         [Command("revokerole")]
         public async Task RevokeAsync(CommandContext ctx, DiscordRole role)
         {
-            await ctx.Message.DeleteAsync();
-
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
             }
-
-            DiscordEmbedBuilder embedBuilder;
-            DiscordMessage msg;
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
                 var allowedRoles = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles", new ulong[] { }, uow)).ToList();
+                DiscordEmbedBuilder embedBuilder;
 
                 if (allowedRoles.Contains(role.Id))
                 {
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Red)
                         .WithDescription($"Die Rolle {role.Mention} kann keine Quotes hinzufügen.");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
 
@@ -247,39 +219,29 @@ namespace Godfrey.Commands
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Die Rolle {role.Mention} kann nun keine Quotes mehr hinzufügen.");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
+                await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
 
         [Command("unblockrole")]
         public async Task UnblockAsync(CommandContext ctx, DiscordRole role)
         {
-            await ctx.Message.DeleteAsync();
-
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
             }
-
-            DiscordEmbedBuilder embedBuilder;
-            DiscordMessage msg;
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
                 var blockedRoles = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles.blocked", new ulong[] { }, uow)).ToList();
+                DiscordEmbedBuilder embedBuilder;
 
                 if (blockedRoles.Contains(role.Id))
                 {
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Red)
                         .WithDescription($"Die Rolle {role.Mention} ist nicht geblockt.");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
                 
@@ -289,39 +251,29 @@ namespace Godfrey.Commands
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Die Rolle {role.Mention} ist nun nicht mehr geblockt.");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
+                await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
 
         [Command("blockrole")]
         public async Task BlockAsync(CommandContext ctx, DiscordRole role)
         {
-            await ctx.Message.DeleteAsync();
-
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
             }
-
-            DiscordEmbedBuilder embedBuilder;
-            DiscordMessage msg;
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
                 var blockedRoles = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles.blocked", new ulong[] { }, uow)).ToList();
+                DiscordEmbedBuilder embedBuilder;
 
                 if (blockedRoles.Contains(role.Id))
                 {
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Red)
                         .WithDescription($"Die Rolle {role.Mention} ist bereits geblockt.");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
 
@@ -331,9 +283,7 @@ namespace Godfrey.Commands
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Die Rolle {role.Mention} ist nun geblockt.");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
+                await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
 
@@ -344,30 +294,22 @@ namespace Godfrey.Commands
         [Command("grantmember")]
         public async Task GrantAsync(CommandContext ctx, DiscordUser member)
         {
-            await ctx.Message.DeleteAsync();
-
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
             }
-
-            DiscordEmbedBuilder embedBuilder;
-            DiscordMessage msg;
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
                 var allowedUsers = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users", new ulong[] { }, uow)).ToList();
+                DiscordEmbedBuilder embedBuilder;
 
                 if (allowedUsers.Contains(member.Id))
                 {
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Red)
                         .WithDescription($"Der Member {member.Mention} kann bereits Quotes hinzufügen.");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
 
@@ -377,39 +319,29 @@ namespace Godfrey.Commands
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Der Member {member.Mention} kann nun Quotes hinzufügen.");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
+                await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
 
         [Command("revokemember")]
         public async Task RevokeAsync(CommandContext ctx, DiscordUser member)
         {
-            await ctx.Message.DeleteAsync();
-
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
             }
-
-            DiscordEmbedBuilder embedBuilder;
-            DiscordMessage msg;
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
                 var allowedUsers = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users", new ulong[] { }, uow)).ToList();
+                DiscordEmbedBuilder embedBuilder;
 
                 if (allowedUsers.Contains(member.Id))
                 {
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Red)
                         .WithDescription($"Der Member {member.Mention} kann keine Quotes hinzufügen.");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
 
@@ -419,39 +351,29 @@ namespace Godfrey.Commands
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Der Member {member.Mention} kann nun keine Quotes mehr hinzufügen.");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
+                await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
 
         [Command("unblockmember")]
         public async Task UnblockAsync(CommandContext ctx, DiscordUser member)
         {
-            await ctx.Message.DeleteAsync();
-
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
             }
-
-            DiscordEmbedBuilder embedBuilder;
-            DiscordMessage msg;
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
                 var blockedUsers = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users.blocked", new ulong[] { }, uow)).ToList();
+                DiscordEmbedBuilder embedBuilder;
 
                 if (!blockedUsers.Contains(member.Id))
                 {
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Red)
                         .WithDescription($"Der Member {member.Mention} ist nicht geblockt.");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
 
@@ -461,39 +383,29 @@ namespace Godfrey.Commands
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Der Member {member.Mention} ist nun nicht mehr geblockt.");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
+                await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
 
         [Command("blockmember")]
         public async Task BlockAsync(CommandContext ctx, DiscordMember member)
         {
-            await ctx.Message.DeleteAsync();
-
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
             }
-
-            DiscordEmbedBuilder embedBuilder;
-            DiscordMessage msg;
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
                 var blockedUsers = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users.blocked", new ulong[] { }, uow)).ToList();
+                DiscordEmbedBuilder embedBuilder;
 
                 if (blockedUsers.Contains(member.Id))
                 {
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Red)
                         .WithDescription($"Der Member {member.Mention} ist bereits geblockt.");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
 
@@ -503,9 +415,7 @@ namespace Godfrey.Commands
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Der Member {member.Mention} ist nun geblockt.");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
+                await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
 
@@ -518,20 +428,14 @@ namespace Godfrey.Commands
         [Command("downtime")]
         public async Task DowntimeAsync(CommandContext ctx, TimeSpan time = default(TimeSpan))
         {
-            await ctx.Message.DeleteAsync();
-
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
             }
-
-            DiscordMessage msg;
-            DiscordEmbedBuilder embedBuilder;
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
+                DiscordEmbedBuilder embedBuilder;
 
                 if (time == default(TimeSpan))
                 {
@@ -539,9 +443,7 @@ namespace Godfrey.Commands
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Orange)
                         .WithDescription($"Quote-Downtime steht auf: {downtime}");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
 
@@ -549,50 +451,7 @@ namespace Godfrey.Commands
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Quote-Downtime steht auf nun auf: {time}");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
-            }
-        }
-
-        [Command("infotime")]
-        public async Task InfotimeAsync(CommandContext ctx, TimeSpan time = default(TimeSpan))
-        {
-            await ctx.Message.DeleteAsync();
-
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                await ctx.RespondAsync("Du bist dazu nicht berechtigt.");
-                return;
-            }
-
-            DiscordMessage msg;
-            DiscordEmbedBuilder embedBuilder;
-
-            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
-            {
-                var infoShowtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.info", TimeSpan.FromSeconds(30), uow);
-
-                if (time == default(TimeSpan))
-                {
-                    embedBuilder = new DiscordEmbedBuilder()
-                        .WithColor(DiscordColor.Orange)
-                        .WithDescription($"Quote-Infotime steht auf: {infoShowtime}");
-                    msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                    await Task.Delay(infoShowtime);
-                    await msg.DeleteAsync();
-                    return;
-                }
-
-                infoShowtime = time;
-
-                await ConfigHelper.SetValueAsync(ctx.Guild, "quote.time.info", time, uow);
-                embedBuilder = new DiscordEmbedBuilder()
-                    .WithColor(DiscordColor.Green)
-                    .WithDescription($"Quote-Infotime steht auf nun auf: {time}");
-                msg = await ctx.RespondAsync(embed: embedBuilder.Build());
-                await Task.Delay(infoShowtime);
-                await msg.DeleteAsync();
+                await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
 
