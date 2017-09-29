@@ -8,17 +8,16 @@ using Newtonsoft.Json;
 
 namespace Godfrey
 {
-    internal class Program
+    internal static class Program
     {
         private static void Main() => Run().Wait();
 
         private static async Task Run()
         {
             var cfg = new ButlerConfig();
-            var json = string.Empty;
             if (!File.Exists("config.json"))
             {
-                json = JsonConvert.SerializeObject(cfg);
+                var json = JsonConvert.SerializeObject(cfg);
                 File.WriteAllText("config.json", json, new UTF8Encoding(false));
                 Console.WriteLine("Config file was not found, a new one was generated. Fill it with proper values and rerun this program");
                 Console.ReadKey();

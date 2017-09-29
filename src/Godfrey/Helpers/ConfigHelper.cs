@@ -39,6 +39,12 @@ namespace Godfrey.Helpers
         public static async Task<Config> SetValueAsync<T>(DiscordGuild guild, string key, T value, DatabaseContext uow = null)
         {
             var cfg = await GetConfigAsync(guild, key, uow);
+
+            if (uow == null)
+            {
+                uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString);
+            }
+
             if (cfg != null)
             {
                 cfg.Value = JsonConvert.SerializeObject(value);

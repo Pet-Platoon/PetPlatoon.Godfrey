@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Data;
-using System.Runtime.Serialization;
 
 namespace Godfrey.Exceptions
 {

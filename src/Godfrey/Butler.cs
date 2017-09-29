@@ -16,7 +16,9 @@ namespace Godfrey
         public static ButlerConfig ButlerConfig => JsonConvert.DeserializeObject<ButlerConfig>(File.ReadAllText("config.json", new UTF8Encoding(false)));
         public static Random RandomGenerator { get; private set; }
         private DiscordClient Client { get; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private VoiceNextClient VoiceNextClient { get; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         private InteractivityModule InteractivityModule { get; }
         private CommandsNextModule CommandsNextModule { get; }
 
