@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Godfrey.Commands
 {
-    [Group("quote", CanInvokeWithoutSubcommand = true), Aliases("kwot", "<:leroy:230337206751854592>")]
+    [Group("quote", CanInvokeWithoutSubcommand = true), Aliases("kwot", "<:leroy:230337206751854592>", "<@240871410954665985>")]
     public class QuoteCommand
     {
         public static DateTime LastRandomQuote;

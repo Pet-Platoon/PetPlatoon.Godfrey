@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Exceptions;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using DSharpPlus.VoiceNext;
@@ -68,6 +69,11 @@ namespace Godfrey
 
         private async Task OnCommandErrored(CommandErrorEventArgs e)
         {
+            if (e.Exception is CommandNotFoundException)
+            {
+                return;
+            }
+
             e.Context.Client.DebugLogger.LogMessage(LogLevel.Error, "Butler", $"{e.Context.User.Username} tried executing '{e.Command?.QualifiedName ?? "<unknown command>"}' but it errored: {e.Exception.GetType()}: {e.Exception.Message ?? "<no message>"}", DateTime.Now);
 
             var embedBuilder = new DiscordEmbedBuilder()
