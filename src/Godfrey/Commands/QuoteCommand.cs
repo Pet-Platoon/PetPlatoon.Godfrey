@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using DSharpPlus;
@@ -6,6 +7,7 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using Godfrey.Exceptions;
+using Godfrey.Extensions;
 using Godfrey.Helpers;
 using Godfrey.Models.Context;
 using Godfrey.Models.Quotes;
@@ -33,7 +35,7 @@ namespace Godfrey.Commands
 
                 if (lastRandomQuote.Add(quoteDowntime) > currentTime)
                 {
-                    await ctx.Member.SendMessageAsync($"Du kannst in {lastRandomQuote.Add(quoteDowntime) - currentTime} wieder einen Quote anfordern!");
+                    await ctx.Member.SendMessageAsync($"Du kannst in {(lastRandomQuote.Add(quoteDowntime) - currentTime).PrettyPrint()} wieder einen Quote anfordern!");
                     return;
                 }
 
@@ -53,7 +55,7 @@ namespace Godfrey.Commands
 
                 var embed = new DiscordEmbedBuilder()
                     .WithAuthor(quote.AuthorName)
-                    .WithFooter($"Zitiert von {quote.QuoterName} | Erstellt: {quote.CreatedAt}")
+                    .WithFooter($"Zitiert von {quote.QuoterName} | Erstellt: {quote.CreatedAt.PrettyPrint()}")
                     .WithDescription(quote.Message)
                     .WithColor(DiscordColor.Orange)
                     .Build();
@@ -144,7 +146,7 @@ namespace Godfrey.Commands
 
                 var embed = new DiscordEmbedBuilder()
                     .WithAuthor(entity.AuthorName)
-                    .WithFooter($"Zitiert von {entity.QuoterName} | Erstellt: {entity.CreatedAt}")
+                    .WithFooter($"Zitiert von {entity.QuoterName} | Erstellt: {entity.CreatedAt.PrettyPrint()}")
                     .WithDescription(entity.Message)
                     .WithColor(DiscordColor.Green)
                     .Build();
@@ -442,7 +444,7 @@ namespace Godfrey.Commands
                     var downtime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.downtime", TimeSpan.FromSeconds(300), uow);
                     embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Orange)
-                        .WithDescription($"Quote-Downtime steht auf: {downtime}");
+                        .WithDescription($"Quote-Downtime steht auf: {downtime.PrettyPrint()}");
                     await ctx.RespondAsync(embed: embedBuilder.Build());
                     return;
                 }
@@ -450,7 +452,7 @@ namespace Godfrey.Commands
                 await ConfigHelper.SetValueAsync(ctx.Guild, "quote.time.downtime", time, uow);
                 embedBuilder = new DiscordEmbedBuilder()
                     .WithColor(DiscordColor.Green)
-                    .WithDescription($"Quote-Downtime steht auf nun auf: {time}");
+                    .WithDescription($"Quote-Downtime steht auf nun auf: {time.PrettyPrint()}");
                 await ctx.RespondAsync(embed: embedBuilder.Build());
             }
         }
