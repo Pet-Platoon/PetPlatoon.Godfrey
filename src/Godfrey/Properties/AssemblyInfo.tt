@@ -1,0 +1,22 @@
+﻿﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ output extension=".cs" #>
+using System.Reflection;
+using System.Runtime.InteropServices;
+
+[assembly: AssemblyTitle("PetPlatoon.Godfrey")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Pet Platoon Community")]
+[assembly: AssemblyProduct("PetPlatoon.Godfrey")]
+[assembly: AssemblyCopyright("")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+[assembly: ComVisible(false)]
+[assembly: Guid("e3f134bd-810e-4e2a-8f8d-1902b4566a2c")]
+[assembly: AssemblyVersion("1.0.<#= this.RevisionNumber #>.<#= this.BuildNumber #>")]
+[assembly: AssemblyFileVersion("1.0.<#= this.RevisionNumber #>.<#= this.BuildNumber #>")]
+
+<#+
+int RevisionNumber = (int)(DateTime.UtcNow - new DateTime(2017, 9, 28)).TotalDays;
+int BuildNumber = (int)(DateTime.UtcNow.Subtract(DateTime.UtcNow.Date)).TotalMinutes / 2;
+#>
