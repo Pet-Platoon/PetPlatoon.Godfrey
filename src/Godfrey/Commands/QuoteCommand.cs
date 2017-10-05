@@ -176,7 +176,9 @@ namespace Godfrey.Commands
                 {
                     throw new KeyNotFoundException($"Der Quote mit der Id \"{id}\" wurde nicht gefunden oder gehört nicht zu diesem Server.");
                 }
-                
+
+                uow.Quotes.Remove(quote);
+
                 await uow.SaveChangesAsync();
                 
                 var embed = new DiscordEmbedBuilder()
