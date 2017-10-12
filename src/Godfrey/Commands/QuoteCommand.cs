@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Globalization;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DSharpPlus;
@@ -156,6 +156,43 @@ namespace Godfrey.Commands
         }
 
         #endregion AddQuote
+
+        #region DeleteQuote
+
+        [Command("delete")]
+        public async Task DeleteQuoteAsync(CommandContext ctx, int id)
+        {
+            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
+            {
+                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
+            }
+
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
+            {
+                var quotes = uow.Quotes.Where(x => x.GuildId == ctx.Guild.Id);
+                var quote = await quotes.FirstOrDefaultAsync(x => x.Id == id);
+
+                if (quote == null)
+                {
+                    throw new KeyNotFoundException($"Der Quote mit der Id \"{id}\" wurde nicht gefunden oder gehört nicht zu diesem Server.");
+                }
+
+                uow.Quotes.Remove(quote);
+
+                await uow.SaveChangesAsync();
+                
+                var embed = new DiscordEmbedBuilder()
+                        .WithAuthor(quote.AuthorName)
+                        .WithFooter($"Zitiert von {quote.QuoterName} | Erstellt: {quote.CreatedAt.PrettyPrint()}")
+                        .WithDescription(quote.Message)
+                        .WithColor(DiscordColor.Red)
+                        .Build();
+
+                await ctx.RespondAsync($"Quote entfernt [#{quote.Id}; Message-Id: {quote.MessageId}; Channel-Id: {quote.ChannelId}]:", embed: embed);
+            }
+        }
+
+        #endregion DeleteQuote
 
         #region Permissions
 
