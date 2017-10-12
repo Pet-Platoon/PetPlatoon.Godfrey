@@ -44,7 +44,7 @@ namespace Godfrey
 
             VoiceNextClient = Client.UseVoiceNext();
 
-            InteractivityModule = Client.UseInteractivity();
+            InteractivityModule = Client.UseInteractivity(new InteractivityConfiguration());
 
             var dependencyCollectionBuilder = new DependencyCollectionBuilder()
                 .AddInstance(this);
