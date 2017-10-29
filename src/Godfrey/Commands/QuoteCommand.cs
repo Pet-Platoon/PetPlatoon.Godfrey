@@ -198,14 +198,9 @@ namespace Godfrey.Commands
 
         #region Roles
 
-        [Command("grantrole")]
+        [Command("grantrole"), RequirePermissions(Permissions.Administrator)]
         public async Task GrantAsync(CommandContext ctx, DiscordRole role)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var allowedRoles = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles", new ulong[] { }, uow)).ToList();
@@ -230,14 +225,9 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("revokerole")]
+        [Command("revokerole"), RequirePermissions(Permissions.Administrator)]
         public async Task RevokeAsync(CommandContext ctx, DiscordRole role)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var allowedRoles = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles", new ulong[] { }, uow)).ToList();
@@ -262,14 +252,9 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("unblockrole")]
+        [Command("unblockrole"), RequirePermissions(Permissions.Administrator)]
         public async Task UnblockAsync(CommandContext ctx, DiscordRole role)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var blockedRoles = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles.blocked", new ulong[] { }, uow)).ToList();
@@ -294,14 +279,9 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("blockrole")]
+        [Command("blockrole"), RequirePermissions(Permissions.Administrator)]
         public async Task BlockAsync(CommandContext ctx, DiscordRole role)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var blockedRoles = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles.blocked", new ulong[] { }, uow)).ToList();
@@ -330,14 +310,9 @@ namespace Godfrey.Commands
 
         #region Members
 
-        [Command("grantmember")]
+        [Command("grantmember"), RequirePermissions(Permissions.Administrator)]
         public async Task GrantAsync(CommandContext ctx, DiscordUser member)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var allowedUsers = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users", new ulong[] { }, uow)).ToList();
@@ -362,14 +337,9 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("revokemember")]
+        [Command("revokemember"), RequirePermissions(Permissions.Administrator)]
         public async Task RevokeAsync(CommandContext ctx, DiscordUser member)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var allowedUsers = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users", new ulong[] { }, uow)).ToList();
@@ -394,14 +364,9 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("unblockmember")]
+        [Command("unblockmember"), RequirePermissions(Permissions.Administrator)]
         public async Task UnblockAsync(CommandContext ctx, DiscordUser member)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var blockedUsers = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users.blocked", new ulong[] { }, uow)).ToList();
@@ -426,14 +391,9 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("blockmember")]
+        [Command("blockmember"), RequirePermissions(Permissions.Administrator)]
         public async Task BlockAsync(CommandContext ctx, DiscordMember member)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var blockedUsers = (await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users.blocked", new ulong[] { }, uow)).ToList();
@@ -464,14 +424,9 @@ namespace Godfrey.Commands
 
         #region Configs
 
-        [Command("downtime")]
+        [Command("downtime"), RequirePermissions(Permissions.Administrator)]
         public async Task DowntimeAsync(CommandContext ctx, TimeSpan time = default(TimeSpan))
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 DiscordEmbedBuilder embedBuilder;
