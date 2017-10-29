@@ -18,6 +18,17 @@ namespace Godfrey.Commands
 
             var rng = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
             var value = rng.Next(0, sides) + 1;
+
+            if (value == 1945)
+            {
+                await ctx.RespondAsync("https://www.youtube.com/watch?v=IPMnEmkoPFs", embed: new DiscordEmbedBuilder()
+                                               .WithAuthor(ctx.Member.Nickname ?? ctx.Member.Username,
+                                                           icon_url: ctx.Member.AvatarUrl)
+                                               .WithColor(DiscordColor.Cyan)
+                                               .WithDescription($"{ctx.Member.Nickname ?? ctx.Member.Username} würfelte eine {value}. Mit einem W{sides}-Würfel."));
+                return;
+            }
+
             await ctx.RespondAsync(embed: new DiscordEmbedBuilder()
                                               .WithAuthor(ctx.Member.Nickname ?? ctx.Member.Username, icon_url: ctx.Member.AvatarUrl)
                                               .WithColor(DiscordColor.Cyan)
