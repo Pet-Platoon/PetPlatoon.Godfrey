@@ -50,7 +50,8 @@ namespace Godfrey.Commands
 
                 if (!Butler.LastIssuedQuotes.ContainsKey(ctx.Guild.Id))
                 {
-                    Butler.LastIssuedQuotes.Add(ctx.Guild.Id, new LoopBackList<int>(Math.Min(10, uow.Quotes.Count(x => x.GuildId == ctx.Guild.Id) - 1)));
+                    var loopbackLength = await ConfigHelper.GetValueAsync<int>(ctx.Guild, "quote.loopback", 10, uow);
+                    Butler.LastIssuedQuotes.Add(ctx.Guild.Id, new LoopBackList<int>(Math.Min(loopbackLength, uow.Quotes.Count(x => x.GuildId == ctx.Guild.Id) - 1)));
                 }
 
                 var quote = await uow.Quotes.Where(x => x.GuildId == ctx.Guild.Id && !Butler.LastIssuedQuotes[ctx.Guild.Id].Contains(x.Id)).OrderBy(x => Butler.RandomGenerator.Next()).FirstOrDefaultAsync();
@@ -454,6 +455,33 @@ namespace Godfrey.Commands
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Quote-Downtime steht auf nun auf: {time.PrettyPrint()}");
                 await ctx.RespondAsync(embed: embedBuilder.Build());
+            }
+        }
+
+        [Command("loopback"), RequirePermissions(Permissions.Administrator)]
+        public async Task LoopbackAsync(CommandContext ctx, int? loopbacks = null)
+        {
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
+            {
+                DiscordEmbedBuilder embedBuilder;
+
+                if (loopbacks == null)
+                {
+                    loopbacks = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.loopback", 10, uow);
+                    embedBuilder = new DiscordEmbedBuilder()
+                            .WithColor(DiscordColor.Orange)
+                            .WithDescription($"Quote-Loopback steht auf: {loopbacks}. Es wird also jedes Quote für {loopbacks} zufällig ausgegebene Quotes ignoriert.");
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
+                    return;
+                }
+
+                await ConfigHelper.SetValueAsync(ctx.Guild, "quote.loopback", loopbacks, uow);
+                embedBuilder = new DiscordEmbedBuilder()
+                        .WithColor(DiscordColor.Green)
+                        .WithDescription($"Quote-Loopback steht nun auf: {loopbacks}. Es wird also jedes Quote für {loopbacks} zufällig ausgegebene Quotes ignoriert. Durch Änderung der Loopbacklänge wird die Loopbackliste zurückgesetzt.");
+                await ctx.RespondAsync(embed: embedBuilder.Build());
+
+                Butler.LastIssuedQuotes[ctx.Guild.Id] = new LoopBackList<int>((int)loopbacks);
             }
         }
 
