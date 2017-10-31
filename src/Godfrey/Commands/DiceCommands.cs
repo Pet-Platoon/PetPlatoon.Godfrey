@@ -26,7 +26,7 @@ namespace Godfrey.Commands
                 }
             }
 
-            if (sides <= 4)
+            if (sides < 4)
             {
                 throw new NotSupportedException("Der Würfel muss mindestens vier Seiten haben.");
             }
