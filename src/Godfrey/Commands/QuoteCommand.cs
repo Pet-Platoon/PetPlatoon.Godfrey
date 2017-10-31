@@ -6,6 +6,7 @@ using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using Godfrey.Collections;
 using Godfrey.Exceptions;
 using Godfrey.Extensions;
 using Godfrey.Helpers;
@@ -47,7 +48,12 @@ namespace Godfrey.Commands
                     throw new MissingQuotesException("Es wurden keine Quotes gefunden");
                 }
 
-                var quote = await uow.Quotes.Where(x => x.GuildId == ctx.Guild.Id).OrderBy(x => Butler.RandomGenerator.Next()).FirstOrDefaultAsync();
+                if (!Butler.LastIssuedQuotes.ContainsKey(ctx.Guild.Id))
+                {
+                    Butler.LastIssuedQuotes.Add(ctx.Guild.Id, new LoopBackList<int>(Math.Min(10, uow.Quotes.Count(x => x.GuildId == ctx.Guild.Id) - 1)));
+                }
+
+                var quote = await uow.Quotes.Where(x => x.GuildId == ctx.Guild.Id && !Butler.LastIssuedQuotes[ctx.Guild.Id].Contains(x.Id)).OrderBy(x => Butler.RandomGenerator.Next()).FirstOrDefaultAsync();
                 if (quote == null)
                 {
                     throw new Exception("Unexpected error occurred. Quote is null after quote count check");
@@ -61,6 +67,8 @@ namespace Godfrey.Commands
                     .Build();
 
                 await ctx.RespondAsync($"Quote [#{quote.Id}]:", embed: embed);
+
+                Butler.LastIssuedQuotes[ctx.Guild.Id].Add(quote.Id);
             }
         }
 
