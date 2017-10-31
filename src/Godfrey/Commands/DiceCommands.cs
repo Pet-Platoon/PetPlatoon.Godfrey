@@ -25,14 +25,14 @@ namespace Godfrey.Commands
                                                .WithAuthor(ctx.Member.Nickname ?? ctx.Member.Username,
                                                            icon_url: ctx.Member.AvatarUrl)
                                                .WithColor(DiscordColor.Cyan)
-                                               .WithDescription($"{ctx.Member.Nickname ?? ctx.Member.Username} würfelte eine {value}. Mit einem W{sides}-Würfel."));
+                                               .WithDescription($"{ctx.Member.Nickname ?? ctx.Member.Username} würfelte eine {value} mit einem W{sides}-Würfel."));
                 return;
             }
 
             await ctx.RespondAsync(embed: new DiscordEmbedBuilder()
                                               .WithAuthor(ctx.Member.Nickname ?? ctx.Member.Username, icon_url: ctx.Member.AvatarUrl)
                                               .WithColor(DiscordColor.Cyan)
-                                              .WithDescription($"{ctx.Member.Nickname ?? ctx.Member.Username} würfelte eine {value}. Mit einem W{sides}-Würfel."));
+                                              .WithDescription($"{ctx.Member.Nickname ?? ctx.Member.Username} würfelte eine {value} mit einem W{sides}-Würfel."));
         }
 
         [Command("coin"), Aliases("münze")]
