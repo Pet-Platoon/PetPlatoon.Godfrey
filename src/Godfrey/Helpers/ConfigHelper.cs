@@ -30,7 +30,7 @@ namespace Godfrey.Helpers
             await uow.SaveChangesAsync();
         }
 
-        public static async Task<T> GetValueAsync<T>(DiscordGuild guild, string key, T defaultValue, DatabaseContext uow = null)
+        public static async Task<T> GetValueAsync<T>(DiscordGuild guild, string key, T defaultValue = default(T), DatabaseContext uow = null)
         {
             var cfg = await GetConfigAsync(guild, key, uow);
             return cfg == null ? defaultValue : JsonConvert.DeserializeObject<T>(cfg.Value);
