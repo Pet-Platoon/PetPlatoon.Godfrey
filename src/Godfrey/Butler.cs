@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Interactivity;
 using DSharpPlus.VoiceNext;
+using Godfrey.Collections;
 using Newtonsoft.Json;
 
 namespace Godfrey
@@ -13,6 +15,8 @@ namespace Godfrey
     public partial class Butler
     {
         public static ButlerConfig ButlerConfig => JsonConvert.DeserializeObject<ButlerConfig>(File.ReadAllText("config.json", new UTF8Encoding(false)));
+
+        public static Dictionary<ulong, LoopBackList<int>> LastIssuedQuotes { get; set; } = new Dictionary<ulong, LoopBackList<int>>();
 
         public static Random RandomGenerator { get; private set; }
         private DiscordClient Client { get; }

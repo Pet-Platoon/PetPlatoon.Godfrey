@@ -10,7 +10,6 @@ using DSharpPlus.Entities;
 using Godfrey.Extensions;
 using Godfrey.Models.Context;
 using Microsoft.CodeAnalysis.Scripting;
-using Newtonsoft.Json;
 
 namespace Godfrey.Commands
 {

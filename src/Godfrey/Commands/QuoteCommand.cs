@@ -6,6 +6,7 @@ using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using Godfrey.Collections;
 using Godfrey.Exceptions;
 using Godfrey.Extensions;
 using Godfrey.Helpers;
@@ -48,7 +49,13 @@ namespace Godfrey.Commands
                     throw new MissingQuotesException("Es wurden keine Quotes gefunden");
                 }
 
-                var quote = await uow.Quotes.Where(x => x.Server.Id == ctx.Guild.Id).OrderBy(x => Butler.RandomGenerator.Next()).FirstOrDefaultAsync();
+                if (!Butler.LastIssuedQuotes.ContainsKey(ctx.Guild.Id))
+                {
+                    var loopbackLength = await ConfigHelper.GetValueAsync<int>(ctx.Guild, "quote.loopback", 10, uow);
+                    Butler.LastIssuedQuotes.Add(ctx.Guild.Id, new LoopBackList<int>(Math.Min(loopbackLength, uow.Quotes.Count(x => x.GuildId == ctx.Guild.Id) - 1)));
+                }
+
+                var quote = await uow.Quotes.Where(x => x.Server.Id == ctx.Guild.Id && !Butler.LastIssuedQuotes[ctx.Guild.Id].Contains(x.Id)).OrderBy(x => Butler.RandomGenerator.Next()).FirstOrDefaultAsync();
                 if (quote == null)
                 {
                     throw new Exception("Unexpected error occurred. Quote is null after quote count check");
@@ -62,6 +69,8 @@ namespace Godfrey.Commands
                     .Build();
 
                 await ctx.RespondAsync($"Quote [#{quote.Id}]:", embed: embed);
+
+                Butler.LastIssuedQuotes[ctx.Guild.Id].Add(quote.Id);
             }
         }
 
@@ -169,13 +178,8 @@ namespace Godfrey.Commands
         #region DeleteQuote
 
         [Command("delete")]
-        public async Task DeleteQuoteAsync(CommandContext ctx, ulong id)
+        public async Task DeleteQuoteAsync(CommandContext ctx, int id)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var quotes = uow.Quotes.Where(x => x.ServerId == ctx.Guild.Id);
@@ -207,7 +211,7 @@ namespace Godfrey.Commands
 
         #region Roles
 
-        [Command("grantrole"), RequirePermissions(Permissions.Administrator)]
+        [Command("grantrole"), RequireUserPermissions(Permissions.Administrator)]
         public async Task GrantAsync(CommandContext ctx, DiscordRole role)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -234,7 +238,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("revokerole"), RequirePermissions(Permissions.Administrator)]
+        [Command("revokerole"), RequireUserPermissions(Permissions.Administrator)]
         public async Task RevokeAsync(CommandContext ctx, DiscordRole role)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -261,7 +265,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("unblockrole"), RequirePermissions(Permissions.Administrator)]
+        [Command("unblockrole"), RequireUserPermissions(Permissions.Administrator)]
         public async Task UnblockAsync(CommandContext ctx, DiscordRole role)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -288,7 +292,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("blockrole"), RequirePermissions(Permissions.Administrator)]
+        [Command("blockrole"), RequireUserPermissions(Permissions.Administrator)]
         public async Task BlockAsync(CommandContext ctx, DiscordRole role)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -319,7 +323,7 @@ namespace Godfrey.Commands
 
         #region Members
 
-        [Command("grantmember"), RequirePermissions(Permissions.Administrator)]
+        [Command("grantmember"), RequireUserPermissions(Permissions.Administrator)]
         public async Task GrantAsync(CommandContext ctx, DiscordUser member)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -346,7 +350,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("revokemember"), RequirePermissions(Permissions.Administrator)]
+        [Command("revokemember"), RequireUserPermissions(Permissions.Administrator)]
         public async Task RevokeAsync(CommandContext ctx, DiscordUser member)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -373,7 +377,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("unblockmember"), RequirePermissions(Permissions.Administrator)]
+        [Command("unblockmember"), RequireUserPermissions(Permissions.Administrator)]
         public async Task UnblockAsync(CommandContext ctx, DiscordUser member)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -400,7 +404,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("blockmember"), RequirePermissions(Permissions.Administrator)]
+        [Command("blockmember"), RequireUserPermissions(Permissions.Administrator)]
         public async Task BlockAsync(CommandContext ctx, DiscordMember member)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -433,7 +437,7 @@ namespace Godfrey.Commands
 
         #region Configs
 
-        [Command("downtime"), RequirePermissions(Permissions.Administrator)]
+        [Command("downtime"), RequireUserPermissions(Permissions.Administrator)]
         public async Task DowntimeAsync(CommandContext ctx, TimeSpan time = default(TimeSpan))
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -455,6 +459,33 @@ namespace Godfrey.Commands
                     .WithColor(DiscordColor.Green)
                     .WithDescription($"Quote-Downtime steht auf nun auf: {time.PrettyPrint()}");
                 await ctx.RespondAsync(embed: embedBuilder.Build());
+            }
+        }
+
+        [Command("loopback"), RequireUserPermissions(Permissions.Administrator)]
+        public async Task LoopbackAsync(CommandContext ctx, int? loopbacks = null)
+        {
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
+            {
+                DiscordEmbedBuilder embedBuilder;
+
+                if (loopbacks == null)
+                {
+                    loopbacks = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.loopback", 10, uow);
+                    embedBuilder = new DiscordEmbedBuilder()
+                            .WithColor(DiscordColor.Orange)
+                            .WithDescription($"Quote-Loopback steht auf: {loopbacks}. Es wird also jedes Quote für {loopbacks} zufällig ausgegebene Quotes ignoriert.");
+                    await ctx.RespondAsync(embed: embedBuilder.Build());
+                    return;
+                }
+
+                await ConfigHelper.SetValueAsync(ctx.Guild, "quote.loopback", loopbacks, uow);
+                embedBuilder = new DiscordEmbedBuilder()
+                        .WithColor(DiscordColor.Green)
+                        .WithDescription($"Quote-Loopback steht nun auf: {loopbacks}. Es wird also jedes Quote für {loopbacks} zufällig ausgegebene Quotes ignoriert. Durch Änderung der Loopbacklänge wird die Loopbackliste zurückgesetzt.");
+                await ctx.RespondAsync(embed: embedBuilder.Build());
+
+                Butler.LastIssuedQuotes[ctx.Guild.Id] = new LoopBackList<int>((int)loopbacks);
             }
         }
 
