@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using Godfrey.Extensions;
+using Godfrey.Helpers;
+using Godfrey.Models.Context;
 
 namespace Godfrey.Commands
 {
@@ -11,6 +15,17 @@ namespace Godfrey.Commands
         [Command("dice"), Aliases("würfel")]
         public async Task DiceAsync(CommandContext ctx, int sides = 6)
         {
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
+            {
+                var channels = await ctx.Guild.GetConfigValueAsync<IList<ulong>>("game.dice.channels", null, uow);
+                if (channels.Contains(ctx.Channel.Id))
+                {
+
+
+                    return;
+                }
+            }
+
             if (sides <= 4)
             {
                 throw new NotSupportedException("Der Würfel muss mindestens vier Seiten haben.");
