@@ -8,7 +8,6 @@ using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using Godfrey.Extensions;
 using Godfrey.Models.Context;
-using Newtonsoft.Json;
 
 namespace Godfrey.Commands
 {
