@@ -168,14 +168,9 @@ namespace Godfrey.Commands
 
         #region DeleteQuote
 
-        [Command("delete")]
+        [Command("delete"), RequireUserPermissions(Permissions.Administrator)]
         public async Task DeleteQuoteAsync(CommandContext ctx, int id)
         {
-            if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
-            {
-                throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-            }
-
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 var quotes = uow.Quotes.Where(x => x.GuildId == ctx.Guild.Id);
@@ -207,7 +202,7 @@ namespace Godfrey.Commands
 
         #region Roles
 
-        [Command("grantrole"), RequirePermissions(Permissions.Administrator)]
+        [Command("grantrole"), RequireUserPermissions(Permissions.Administrator)]
         public async Task GrantAsync(CommandContext ctx, DiscordRole role)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -234,7 +229,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("revokerole"), RequirePermissions(Permissions.Administrator)]
+        [Command("revokerole"), RequireUserPermissions(Permissions.Administrator)]
         public async Task RevokeAsync(CommandContext ctx, DiscordRole role)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -261,7 +256,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("unblockrole"), RequirePermissions(Permissions.Administrator)]
+        [Command("unblockrole"), RequireUserPermissions(Permissions.Administrator)]
         public async Task UnblockAsync(CommandContext ctx, DiscordRole role)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -288,7 +283,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("blockrole"), RequirePermissions(Permissions.Administrator)]
+        [Command("blockrole"), RequireUserPermissions(Permissions.Administrator)]
         public async Task BlockAsync(CommandContext ctx, DiscordRole role)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -319,7 +314,7 @@ namespace Godfrey.Commands
 
         #region Members
 
-        [Command("grantmember"), RequirePermissions(Permissions.Administrator)]
+        [Command("grantmember"), RequireUserPermissions(Permissions.Administrator)]
         public async Task GrantAsync(CommandContext ctx, DiscordUser member)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -346,7 +341,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("revokemember"), RequirePermissions(Permissions.Administrator)]
+        [Command("revokemember"), RequireUserPermissions(Permissions.Administrator)]
         public async Task RevokeAsync(CommandContext ctx, DiscordUser member)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -373,7 +368,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("unblockmember"), RequirePermissions(Permissions.Administrator)]
+        [Command("unblockmember"), RequireUserPermissions(Permissions.Administrator)]
         public async Task UnblockAsync(CommandContext ctx, DiscordUser member)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -400,7 +395,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("blockmember"), RequirePermissions(Permissions.Administrator)]
+        [Command("blockmember"), RequireUserPermissions(Permissions.Administrator)]
         public async Task BlockAsync(CommandContext ctx, DiscordMember member)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -433,7 +428,7 @@ namespace Godfrey.Commands
 
         #region Configs
 
-        [Command("downtime"), RequirePermissions(Permissions.Administrator)]
+        [Command("downtime"), RequireUserPermissions(Permissions.Administrator)]
         public async Task DowntimeAsync(CommandContext ctx, TimeSpan time = default(TimeSpan))
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -458,7 +453,7 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("loopback"), RequirePermissions(Permissions.Administrator)]
+        [Command("loopback"), RequireUserPermissions(Permissions.Administrator)]
         public async Task LoopbackAsync(CommandContext ctx, int? loopbacks = null)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
