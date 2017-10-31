@@ -11,7 +11,7 @@ namespace Godfrey.Commands
         [Command("dice"), Aliases("würfel")]
         public async Task DiceAsync(CommandContext ctx, int sides = 6)
         {
-            if (sides <= 4)
+            if (sides < 4)
             {
                 throw new NotSupportedException("Der Würfel muss mindestens vier Seiten haben.");
             }
