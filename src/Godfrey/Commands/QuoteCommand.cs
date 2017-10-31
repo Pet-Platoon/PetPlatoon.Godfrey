@@ -11,6 +11,7 @@ using Godfrey.Extensions;
 using Godfrey.Helpers;
 using Godfrey.Models.Context;
 using Godfrey.Models.Quotes;
+using Godfrey.Models.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace Godfrey.Commands
@@ -42,20 +43,20 @@ namespace Godfrey.Commands
                 lastRandomQuote = DateTime.UtcNow;
                 await ConfigHelper.SetValueAsync(ctx.Guild, "quote.time.last", lastRandomQuote, uow);
                 
-                if (!await uow.Quotes.AnyAsync(x => x.GuildId == ctx.Guild.Id))
+                if (!await uow.Quotes.AnyAsync(x => x.Server.Id == ctx.Guild.Id))
                 {
                     throw new MissingQuotesException("Es wurden keine Quotes gefunden");
                 }
 
-                var quote = await uow.Quotes.Where(x => x.GuildId == ctx.Guild.Id).OrderBy(x => Butler.RandomGenerator.Next()).FirstOrDefaultAsync();
+                var quote = await uow.Quotes.Where(x => x.Server.Id == ctx.Guild.Id).OrderBy(x => Butler.RandomGenerator.Next()).FirstOrDefaultAsync();
                 if (quote == null)
                 {
                     throw new Exception("Unexpected error occurred. Quote is null after quote count check");
                 }
 
                 var embed = new DiscordEmbedBuilder()
-                    .WithAuthor(quote.AuthorName)
-                    .WithFooter($"Zitiert von {quote.QuoterName} | Erstellt: {quote.CreatedAt.PrettyPrint()}")
+                    .WithAuthor(quote.Author.Name)
+                    .WithFooter($"Zitiert von {quote.Quoter.Name} | Erstellt: {quote.CreatedAt.PrettyPrint()}")
                     .WithDescription(quote.Message)
                     .WithColor(DiscordColor.Orange)
                     .Build();
@@ -77,6 +78,16 @@ namespace Godfrey.Commands
                 var allowedRoles = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles", new ulong[] { });
                 var blockedUsers = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users.blocked", new ulong[] { });
                 var blockedRoles = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles.blocked", new ulong[] { });
+
+                var quoter = await uow.Users.FirstOrDefaultAsync(x => x.Id == ctx.User.Id);
+
+                if (quoter == null)
+                {
+                    quoter = new User
+                    {
+                        
+                    };
+                }
 
                 if (blockedUsers.Any(x => x == ctx.User.Id) || ctx.Member.Roles.Any(x => blockedRoles.Contains(x.Id)))
                 {
@@ -120,7 +131,7 @@ namespace Godfrey.Commands
                     throw new Exception("Du darfst dich nicht selber quoten!");
                 }
 
-                if (await uow.Quotes.AnyAsync(x => x.MessageId == id))
+                if (await uow.Quotes.AnyAsync(x => x.Id == id))
                 {
                     throw new Exception("Diese Nachricht wurde bereits gequoted.");
                 }
@@ -129,14 +140,12 @@ namespace Godfrey.Commands
 
                 var quote = new Quote
                 {
-                    AuthorId = message.Author.Id,
-                    AuthorName = message.Author.Username,
-                    QuoterId = ctx.User.Id,
-                    QuoterName = ctx.User.Username,
-                    GuildId = ctx.Guild.Id,
-                    ChannelId = ctx.Channel.Id,
-                    MessageId = message.Id,
+                    Id = message.Id,
                     Message = message.Content,
+                    AuthorId = message.Author.Id,
+                    QuoterId = ctx.User.Id,
+                    ServerId = ctx.Guild.Id,
+                    ChannelId = ctx.Channel.Id,
                     CreatedAt = message.CreationTimestamp.UtcDateTime
                 };
 
@@ -145,8 +154,8 @@ namespace Godfrey.Commands
                 var entity = trackingQuote.Entity;
 
                 var embed = new DiscordEmbedBuilder()
-                    .WithAuthor(entity.AuthorName)
-                    .WithFooter($"Zitiert von {entity.QuoterName} | Erstellt: {entity.CreatedAt.PrettyPrint()}")
+                    .WithAuthor(entity.Author.Name)
+                    .WithFooter($"Zitiert von {entity.Quoter.Name} | Erstellt: {entity.CreatedAt.PrettyPrint()}")
                     .WithDescription(entity.Message)
                     .WithColor(DiscordColor.Green)
                     .Build();
@@ -160,7 +169,7 @@ namespace Godfrey.Commands
         #region DeleteQuote
 
         [Command("delete")]
-        public async Task DeleteQuoteAsync(CommandContext ctx, int id)
+        public async Task DeleteQuoteAsync(CommandContext ctx, ulong id)
         {
             if (!ctx.Member.PermissionsIn(ctx.Channel).HasFlag(Permissions.Administrator))
             {
@@ -169,7 +178,7 @@ namespace Godfrey.Commands
 
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                var quotes = uow.Quotes.Where(x => x.GuildId == ctx.Guild.Id);
+                var quotes = uow.Quotes.Where(x => x.ServerId == ctx.Guild.Id);
                 var quote = await quotes.FirstOrDefaultAsync(x => x.Id == id);
 
                 if (quote == null)
@@ -182,13 +191,13 @@ namespace Godfrey.Commands
                 await uow.SaveChangesAsync();
                 
                 var embed = new DiscordEmbedBuilder()
-                        .WithAuthor(quote.AuthorName)
-                        .WithFooter($"Zitiert von {quote.QuoterName} | Erstellt: {quote.CreatedAt.PrettyPrint()}")
+                        .WithAuthor(quote.Author.Name)
+                        .WithFooter($"Zitiert von {quote.Quoter.Name} | Erstellt: {quote.CreatedAt.PrettyPrint()}")
                         .WithDescription(quote.Message)
                         .WithColor(DiscordColor.Red)
                         .Build();
 
-                await ctx.RespondAsync($"Quote entfernt [#{quote.Id}; Message-Id: {quote.MessageId}; Channel-Id: {quote.ChannelId}]:", embed: embed);
+                await ctx.RespondAsync($"Quote entfernt [#{quote.Id}; Message-Id: {quote.Id}; Channel-Id: {quote.ChannelId}]:", embed: embed);
             }
         }
 

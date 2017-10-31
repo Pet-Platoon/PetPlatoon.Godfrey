@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using Godfrey.Extensions;
 using Godfrey.Models.Context;
+using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json;
 
 namespace Godfrey.Commands
@@ -15,7 +17,7 @@ namespace Godfrey.Commands
     public class OwnerCommands
     {
         [Command("sql"), RequireOwner]
-        public async Task SqlAsync(CommandContext ctx, [RemainingText]string sql)
+        public async Task SqlAsync(CommandContext ctx, [RemainingText] string sql)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
@@ -85,6 +87,63 @@ namespace Godfrey.Commands
 
                 await ctx.RespondAsync($"```{Environment.NewLine}{sb}{Environment.NewLine}```");
             }
+        }
+
+        [Command("eval"), Description("Evaluates C# code."), RequireOwner]
+        public async Task EvalAsync(CommandContext ctx, [RemainingText] string code)
+        {
+            var msg = ctx.Message;
+
+            var cs1 = code.IndexOf("```", StringComparison.InvariantCulture) + 3;
+            cs1 = code.IndexOf('\n', cs1) + 1;
+            var cs2 = code.LastIndexOf("```", StringComparison.InvariantCulture);
+
+            if (cs1 == -1 || cs2 == -1)
+            {
+                throw new ArgumentException("You need to wrap the code into a code block.", nameof(code));
+            }
+
+            var cs = code.Substring(cs1, cs2 - cs1);
+
+            msg = await ctx.RespondAsync("", embed: new DiscordEmbedBuilder()
+                                                 .WithColor(DiscordColor.Rose)
+                                                 .WithDescription("Evaluating...")
+                                                 .Build()).ConfigureAwait(false);
+
+            try
+            {
+                var globals = new EvalParameters(ctx);
+
+                var sopts = ScriptOptions.Default;
+            }
+            catch ()
+            {
+                
+            }
+        }
+    }
+
+    public class EvalParameters
+    {
+        public DiscordClient Client;
+
+        public DiscordMessage Message { get; set; }
+        public DiscordChannel Channel { get; set; }
+        public DiscordGuild Guild { get; set; }
+        public DiscordUser User { get; set; }
+        public DiscordMember Member { get; set; }
+        public CommandContext Context { get; set; }
+
+        public EvalParameters(CommandContext context)
+        {
+            Client = context.Client;
+
+            Message = context.Message;
+            Channel = Message.Channel;
+            Guild = Channel.Guild;
+            User = Message.Author;
+            Member = Guild?.GetMemberAsync(User.Id).ConfigureAwait(false).GetAwaiter().GetResult();
+            Context = context;
         }
     }
 }

@@ -17,10 +17,10 @@ namespace Godfrey
         public static Random RandomGenerator { get; private set; }
         private DiscordClient Client { get; }
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        private VoiceNextClient VoiceNextClient { get; }
+        private VoiceNextExtension VoiceNextClient { get; }
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
-        private InteractivityModule InteractivityModule { get; }
-        private CommandsNextModule CommandsNextModule { get; }
+        private InteractivityExtension InteractivityModule { get; }
+        private CommandsNextExtension CommandsNextModule { get; }
 
         public Butler(int shardId)
         {
@@ -36,7 +36,7 @@ namespace Godfrey
                 UseInternalLogHandler = true,
                 ShardId = shardId,
                 ShardCount = ButlerConfig.ShardCount,
-                EnableCompression = true,
+                GatewayCompressionLevel = GatewayCompressionLevel.Stream,
                 MessageCacheSize = 50,
                 AutomaticGuildSync = !ButlerConfig.UseUserToken
             };
@@ -57,7 +57,7 @@ namespace Godfrey
                 EnableDms = true,
                 EnableMentionPrefix = true,
                 CaseSensitive = true,
-                SelfBot = ButlerConfig.UseUserToken,
+                Selfbot = ButlerConfig.UseUserToken,
                 IgnoreExtraArguments = false,
                 Dependencies = dependencyCollection
             };
