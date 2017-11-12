@@ -25,6 +25,11 @@ namespace Godfrey.Collections
 
         public void Add(T value)
         {
+            if (items.Length == 0)
+            {
+                return;
+            }
+
             if (items.Contains(value))
             {
                 return;
