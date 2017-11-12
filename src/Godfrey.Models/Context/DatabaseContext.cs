@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Godfrey.Models.Configs;
+using Godfrey.Models.Configurations;
 using Godfrey.Models.Quotes;
 using Godfrey.Models.Servers;
 using Godfrey.Models.Users;
@@ -10,6 +11,7 @@ namespace Godfrey.Models.Context
     public class DatabaseContext : DbContext
     {
         public virtual DbSet<Server> Servers { get; set; }
+        public virtual DbSet<ServerMember> ServerMembers { get; set; }
         public virtual DbSet<Config> Configs { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Quote> Quotes { get; set; }
@@ -17,6 +19,15 @@ namespace Godfrey.Models.Context
         public DatabaseContext(DbContextOptions options) : base(options)
         {
 
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.ApplyConfiguration(new ServerConfiguration());
+            modelBuilder.ApplyConfiguration(new QuoteConfiguration());
+            modelBuilder.ApplyConfiguration(new UserConfiguration());
         }
     }
 

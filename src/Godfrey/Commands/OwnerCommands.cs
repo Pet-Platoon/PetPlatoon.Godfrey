@@ -9,6 +9,7 @@ using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using Godfrey.Extensions;
 using Godfrey.Models.Context;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 
 namespace Godfrey.Commands
@@ -20,6 +21,8 @@ namespace Godfrey.Commands
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
+                await ctx.MapToDatabaseAsync(uow);
+                
                 var reader = await uow.Database.ExecuteSqlQueryAsync(sql);
                 var read = reader.DbDataReader;
 
@@ -73,11 +76,8 @@ namespace Godfrey.Commands
 
                 for (var i = 0; i < data.ElementAt(0).Value.Count; i++)
                 {
-                    for (var j = 0; j < data.Count; j++)
-                    {
-                        var formatter = $"{{0,{lengths[j]}}}";
-                        items.Add(string.Format(formatter, data[data.Keys.ElementAt(j)][i]));
-                    }
+                    // ReSharper disable once AccessToModifiedClosure
+                    items.AddRange(data.Select((t, j) => $"{{0,{lengths[j]}}}").Select((formatter, j) => string.Format(formatter, data[data.Keys.ElementAt(j)][i])));
 
                     var row = string.Join(" | ", items);
                     sb.AppendLine(row);
@@ -91,33 +91,63 @@ namespace Godfrey.Commands
         [Command("eval"), Description("Evaluates C# code."), RequireOwner]
         public async Task EvalAsync(CommandContext ctx, [RemainingText] string code)
         {
-            var msg = ctx.Message;
-
-            var cs1 = code.IndexOf("```", StringComparison.InvariantCulture) + 3;
-            cs1 = code.IndexOf('\n', cs1) + 1;
-            var cs2 = code.LastIndexOf("```", StringComparison.InvariantCulture);
-
-            if (cs1 == -1 || cs2 == -1)
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                throw new ArgumentException("You need to wrap the code into a code block.", nameof(code));
-            }
+                await ctx.MapToDatabaseAsync(uow);
 
-            var cs = code.Substring(cs1, cs2 - cs1);
+                var cs1 = code.IndexOf("```", StringComparison.InvariantCulture) + 3;
+                cs1 = code.IndexOf('\n', cs1) + 1;
+                var cs2 = code.LastIndexOf("```", StringComparison.InvariantCulture);
 
-            msg = await ctx.RespondAsync("", embed: new DiscordEmbedBuilder()
-                                                 .WithColor(DiscordColor.Rose)
-                                                 .WithDescription("Evaluating...")
-                                                 .Build()).ConfigureAwait(false);
+                if (cs1 == -1 || cs2 == -1)
+                {
+                    throw new ArgumentException("You need to wrap the code into a code block.", nameof(code));
+                }
 
-            try
-            {
-                var globals = new EvalParameters(ctx);
+                var cs = code.Substring(cs1, cs2 - cs1);
 
-                var sopts = ScriptOptions.Default;
-            }
-            catch ()
-            {
-                
+                var msg = await ctx.RespondAsync("", embed: new DiscordEmbedBuilder()
+                                                                    .WithColor(DiscordColor.Rose)
+                                                                    .WithDescription("Evaluating...")
+                                                                    .Build()).ConfigureAwait(false);
+
+                try
+                {
+                    var globals = new EvalParameters(ctx, uow);
+                    
+                    var sopts = ScriptOptions.Default;
+                    sopts.AddImports("System", "System.Collections.Generic", "System.Linq", "System.Text", "System.Threading.Tasks", "Microsoft.EntityFrameworkCore", "Microsoft.EntityFrameworkCore.Extensions.Internal", "DSharpPlus", "DSharpPlus.CommandsNext", "DSharpPlus.Interactivity", "Godfrey", "Godfrey.Collections", "Godfrey.Commands", "Godfrey.Exceptions", "Godfrey.Extensions", "Godfrey.Helpers", "Godfrey.Models", "Godfrey.Models.Common", "Godfrey.Models.Configs", "Godfrey.Models.Context", "Godfrey.Models.Quotes", "Godfrey.Models.Servers", "Godfrey.Models.Users");
+                    sopts.AddReferences(AppDomain.CurrentDomain.GetAssemblies().Where(xa => !xa.IsDynamic && !string.IsNullOrWhiteSpace(xa.Location)));
+
+                    var script = CSharpScript.Create(cs, sopts, typeof(EvalParameters));
+                    script.Compile();
+                    var result = await script.RunAsync(globals).ConfigureAwait(false);
+
+                    if (string.IsNullOrWhiteSpace(result?.ReturnValue?.ToString()))
+                    {
+                        await msg.ModifyAsync(embed: new DiscordEmbedBuilder()
+                                                      .WithTitle("Evaluation successful")
+                                                      .WithDescription("No result was returned.")
+                                                      .WithColor(DiscordColor.Azure)
+                                                      .Build()).ConfigureAwait(false);
+                        return;
+                    }
+
+                    await msg.ModifyAsync(embed: new DiscordEmbedBuilder()
+                                                  .WithTitle("Evaluation result")
+                                                  .WithDescription(result.ReturnValue.ToString())
+                                                  .WithColor(DiscordColor.Azure)
+                                                  .Build()).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+
+                    await msg.ModifyAsync(embed: new DiscordEmbedBuilder()
+                                                  .WithTitle("Evaluation result")
+                                                  .WithDescription(string.Concat("**", ex.GetType().ToString(), "**: ", ex.Message))
+                                                  .WithColor(DiscordColor.Red)
+                                                  .Build()).ConfigureAwait(false);
+                }
             }
         }
     }
@@ -126,14 +156,15 @@ namespace Godfrey.Commands
     {
         public DiscordClient Client;
 
-        public DiscordMessage Message { get; set; }
-        public DiscordChannel Channel { get; set; }
-        public DiscordGuild Guild { get; set; }
-        public DiscordUser User { get; set; }
-        public DiscordMember Member { get; set; }
-        public CommandContext Context { get; set; }
+        public DiscordMessage Message { get; }
+        public DiscordChannel Channel { get; }
+        public DiscordGuild Guild { get; }
+        public DiscordUser User { get; }
+        public DiscordMember Member { get; }
+        public CommandContext Context { get; }
+        public DatabaseContext UnitOfWork { get; }
 
-        public EvalParameters(CommandContext context)
+        public EvalParameters(CommandContext context, DatabaseContext uow)
         {
             Client = context.Client;
 
@@ -143,6 +174,8 @@ namespace Godfrey.Commands
             User = Message.Author;
             Member = Guild?.GetMemberAsync(User.Id).ConfigureAwait(false).GetAwaiter().GetResult();
             Context = context;
+            
+            UnitOfWork = uow;
         }
     }
 }

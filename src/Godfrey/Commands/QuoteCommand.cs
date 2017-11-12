@@ -12,7 +12,6 @@ using Godfrey.Extensions;
 using Godfrey.Helpers;
 using Godfrey.Models.Context;
 using Godfrey.Models.Quotes;
-using Godfrey.Models.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace Godfrey.Commands
@@ -31,6 +30,8 @@ namespace Godfrey.Commands
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
+                await ctx.MapToDatabaseAsync(uow);
+
                 var currentTime = DateTime.UtcNow;
                 var lastRandomQuote = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.last", new DateTime(), uow);
                 var quoteDowntime = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.time.downtime", TimeSpan.FromSeconds(300), uow);
@@ -43,19 +44,23 @@ namespace Godfrey.Commands
 
                 lastRandomQuote = DateTime.UtcNow;
                 await ConfigHelper.SetValueAsync(ctx.Guild, "quote.time.last", lastRandomQuote, uow);
+
+                if (!Butler.LastIssuedQuotes.ContainsKey(ctx.Guild.Id))
+                {
+                    var loopbackLength = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.loopback", 10, uow);
+                    Butler.LastIssuedQuotes.Add(ctx.Guild.Id, new LoopBackList<ulong>(Math.Min(loopbackLength, uow.Quotes.Count(x => x.Server.Id == ctx.Guild.Id) - 1)));
+                }
                 
-                if (!await uow.Quotes.AnyAsync(x => x.Server.Id == ctx.Guild.Id))
+                if (!await uow.Quotes.AnyAsync(x => x.Server.Id == ctx.Guild.Id && !Butler.LastIssuedQuotes[ctx.Guild.Id].Contains(x.Id)))
                 {
                     throw new MissingQuotesException("Es wurden keine Quotes gefunden");
                 }
 
-                if (!Butler.LastIssuedQuotes.ContainsKey(ctx.Guild.Id))
-                {
-                    var loopbackLength = await ConfigHelper.GetValueAsync<int>(ctx.Guild, "quote.loopback", 10, uow);
-                    Butler.LastIssuedQuotes.Add(ctx.Guild.Id, new LoopBackList<int>(Math.Min(loopbackLength, uow.Quotes.Count(x => x.GuildId == ctx.Guild.Id) - 1)));
-                }
-
-                var quote = await uow.Quotes.Where(x => x.Server.Id == ctx.Guild.Id && !Butler.LastIssuedQuotes[ctx.Guild.Id].Contains(x.Id)).OrderBy(x => Butler.RandomGenerator.Next()).FirstOrDefaultAsync();
+                var quote = await uow.Quotes.Where(x => x.Server.Id == ctx.Guild.Id && !Butler.LastIssuedQuotes[ctx.Guild.Id].Contains(x.Id))
+                                            .OrderBy(x => Butler.RandomGenerator.Next())
+                                            .Include(x => x.Author)
+                                            .Include(x => x.Quoter)
+                                            .FirstOrDefaultAsync();
                 if (quote == null)
                 {
                     throw new Exception("Unexpected error occurred. Quote is null after quote count check");
@@ -83,42 +88,12 @@ namespace Godfrey.Commands
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
+                await ctx.MapToDatabaseAsync(uow);
+
                 var allowedUsers = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users", new ulong[] { });
                 var allowedRoles = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles", new ulong[] { });
-                var blockedUsers = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.users.blocked", new ulong[] { });
-                var blockedRoles = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.permission.roles.blocked", new ulong[] { });
 
-                var quoter = await uow.Users.FirstOrDefaultAsync(x => x.Id == ctx.User.Id);
-
-                if (quoter == null)
-                {
-                    quoter = new User
-                    {
-                        
-                    };
-                }
-
-                if (blockedUsers.Any(x => x == ctx.User.Id) || ctx.Member.Roles.Any(x => blockedRoles.Contains(x.Id)))
-                {
-                    throw new UsageBlockedException("Du bist von der Nutzung ausgeschlossen.");
-                }
-
-                // ctx.Member.Roles.Any(x => allowedRoles.Contains(x.Id))
-                if (allowedRoles.Any() && !allowedUsers.Any())
-                {
-                    if (!ctx.Member.Roles.Any(x => allowedRoles.Contains(x.Id)))
-                    {
-                        throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-                    }
-                }
-
-                if (!allowedRoles.Any() && allowedUsers.Any())
-                {
-                    if (allowedUsers.All(x => x != ctx.User.Id))
-                    {
-                        throw new UsageBlockedException("Du bist dazu nicht berechtigt.");
-                    }
-                }
+                var quoter = await ctx.User.GetUserAsync(uow);
 
                 if (allowedRoles.Any() && allowedUsers.Any())
                 {
@@ -147,12 +122,14 @@ namespace Godfrey.Commands
 
                 var msg = await ctx.RespondAsync("Füge Quote hinzu...");
 
+                var author = await message.Author.GetUserAsync(uow);
+
                 var quote = new Quote
                 {
                     Id = message.Id,
                     Message = message.Content,
-                    AuthorId = message.Author.Id,
-                    QuoterId = ctx.User.Id,
+                    AuthorId = author.Id,
+                    QuoterId = quoter.Id,
                     ServerId = ctx.Guild.Id,
                     ChannelId = ctx.Channel.Id,
                     CreatedAt = message.CreationTimestamp.UtcDateTime
@@ -178,10 +155,12 @@ namespace Godfrey.Commands
         #region DeleteQuote
 
         [Command("delete")]
-        public async Task DeleteQuoteAsync(CommandContext ctx, int id)
+        public async Task DeleteQuoteAsync(CommandContext ctx, ulong id)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
+                await ctx.MapToDatabaseAsync(uow);
+
                 var quotes = uow.Quotes.Where(x => x.ServerId == ctx.Guild.Id);
                 var quote = await quotes.FirstOrDefaultAsync(x => x.Id == id);
 
@@ -442,6 +421,8 @@ namespace Godfrey.Commands
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
+                await ctx.MapToDatabaseAsync(uow);
+
                 DiscordEmbedBuilder embedBuilder;
 
                 if (time == default(TimeSpan))
@@ -463,13 +444,15 @@ namespace Godfrey.Commands
         }
 
         [Command("loopback"), RequireUserPermissions(Permissions.Administrator)]
-        public async Task LoopbackAsync(CommandContext ctx, int? loopbacks = null)
+        public async Task LoopbackAsync(CommandContext ctx, int loopbacks = 0)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
+                await ctx.MapToDatabaseAsync(uow);
+
                 DiscordEmbedBuilder embedBuilder;
 
-                if (loopbacks == null)
+                if (loopbacks == 0)
                 {
                     loopbacks = await ConfigHelper.GetValueAsync(ctx.Guild, "quote.loopback", 10, uow);
                     embedBuilder = new DiscordEmbedBuilder()
@@ -479,13 +462,18 @@ namespace Godfrey.Commands
                     return;
                 }
 
+                if (loopbacks == -1)
+                {
+                    loopbacks = 0;
+                }
+
                 await ConfigHelper.SetValueAsync(ctx.Guild, "quote.loopback", loopbacks, uow);
                 embedBuilder = new DiscordEmbedBuilder()
                         .WithColor(DiscordColor.Green)
                         .WithDescription($"Quote-Loopback steht nun auf: {loopbacks}. Es wird also jedes Quote für {loopbacks} zufällig ausgegebene Quotes ignoriert. Durch Änderung der Loopbacklänge wird die Loopbackliste zurückgesetzt.");
                 await ctx.RespondAsync(embed: embedBuilder.Build());
 
-                Butler.LastIssuedQuotes[ctx.Guild.Id] = new LoopBackList<int>((int)loopbacks);
+                Butler.LastIssuedQuotes[ctx.Guild.Id] = new LoopBackList<ulong>((ulong)loopbacks);
             }
         }
 
