@@ -16,7 +16,7 @@ namespace Godfrey.Helpers
                 uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString);
             }
 
-            return await uow.Configs.FirstOrDefaultAsync(x => x.GuildId == guild.Id && x.Key == key);
+            return await uow.Configs.FirstOrDefaultAsync(x => x.ServerId == guild.Id && x.Key == key);
         }
 
         public static async Task AddConfigAsync(Config config, DatabaseContext uow = null)
@@ -54,7 +54,7 @@ namespace Godfrey.Helpers
 
             cfg = new Config
             {
-                GuildId = guild.Id,
+                ServerId = guild.Id,
                 Key = key,
                 Value = JsonConvert.SerializeObject(value)
             };

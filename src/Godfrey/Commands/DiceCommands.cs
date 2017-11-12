@@ -17,10 +17,11 @@ namespace Godfrey.Commands
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
+                await ctx.MapToDatabaseAsync(uow);
+                
                 var channels = await ctx.Guild.GetConfigValueAsync<IList<ulong>>("game.dice.channels", null, uow);
                 if (channels.Contains(ctx.Channel.Id))
                 {
-
 
                     return;
                 }
@@ -53,6 +54,11 @@ namespace Godfrey.Commands
         [Command("coin"), Aliases("münze")]
         public async Task CoinAsync(CommandContext ctx)
         {
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
+            {
+                await ctx.MapToDatabaseAsync(uow);
+            }
+
             var rng = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
             var value = rng.Next(0, 2);
             await ctx.RespondAsync(embed: new DiscordEmbedBuilder()

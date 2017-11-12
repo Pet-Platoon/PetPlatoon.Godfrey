@@ -4,11 +4,22 @@ using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Exceptions;
 using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
+using Godfrey.Extensions;
+using Godfrey.Models.Context;
 
 namespace Godfrey
 {
     public partial class Butler
     {
+        private async Task GuildAvailable(GuildCreateEventArgs e)
+        {
+            using (var uow = await DatabaseContextFactory.CreateAsync(ButlerConfig.ConnectionString))
+            {
+                await e.Guild.GetServerAsync(uow);
+            }
+        }
+
         private async Task OnCommandErrored(CommandErrorEventArgs e)
         {
             if (e.Exception is CommandNotFoundException)
@@ -17,6 +28,11 @@ namespace Godfrey
             }
 
             e.Context.Client.DebugLogger.LogMessage(LogLevel.Error, "Butler", $"{e.Context.User.Username} tried executing '{e.Command?.QualifiedName ?? "<unknown command>"}' but it errored: {e.Exception.GetType()}: {e.Exception.Message ?? "<no message>"}", DateTime.Now);
+
+            if (e.Exception.InnerException != null)
+            {
+                Console.WriteLine(e.Exception.InnerException);
+            }
 
             var embedBuilder = new DiscordEmbedBuilder()
                     .WithTitle("Ein Fehler ist aufgetreten!")
