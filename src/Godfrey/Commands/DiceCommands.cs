@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using Godfrey.Extensions;
+using Godfrey.Models.Context;
 
 namespace Godfrey.Commands
 {
@@ -11,6 +13,11 @@ namespace Godfrey.Commands
         [Command("dice"), Aliases("würfel")]
         public async Task DiceAsync(CommandContext ctx, int sides = 6)
         {
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
+            {
+                await ctx.MapToDatabaseAsync(uow);
+            }
+
             if (sides < 4)
             {
                 throw new NotSupportedException("Der Würfel muss mindestens vier Seiten haben.");
@@ -38,6 +45,11 @@ namespace Godfrey.Commands
         [Command("coin"), Aliases("münze")]
         public async Task CoinAsync(CommandContext ctx)
         {
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
+            {
+                await ctx.MapToDatabaseAsync(uow);
+            }
+
             var rng = new Random((int)(DateTime.UtcNow.Ticks % int.MaxValue));
             var value = rng.Next(0, 2);
             await ctx.RespondAsync(embed: new DiscordEmbedBuilder()
