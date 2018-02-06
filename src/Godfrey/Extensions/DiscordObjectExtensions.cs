@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using Godfrey.Models.Context;
 using Godfrey.Models.Servers;
@@ -10,16 +9,6 @@ namespace Godfrey.Extensions
 {
     public static class DiscordObjectExtensions
     {
-        public static async Task MapToDatabaseAsync(this CommandContext ctx, DatabaseContext context)
-        {
-            await ctx.User.GetUserAsync(context);
-            await ctx.Guild.GetServerAsync(context);
-            foreach (var messageMentionedUser in ctx.Message.MentionedUsers)
-            {
-                await messageMentionedUser.GetUserAsync(context);
-            }
-        }
-
         public static async Task<User> GetUserAsync(this DiscordUser member, DatabaseContext context)
         {
             var result = await context.Users.FirstOrDefaultAsync(x => x.Id == member.Id);

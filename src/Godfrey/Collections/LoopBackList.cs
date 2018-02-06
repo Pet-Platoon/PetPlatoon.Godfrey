@@ -4,40 +4,40 @@ namespace Godfrey.Collections
 {
     public class LoopBackList<T>
     {
-        private T[] items;
+        private readonly T[] _items;
 
         public int CursorPosition { get; set; }
 
         public LoopBackList(int length)
         {
-            items = new T[length];
+            _items = new T[length];
         }
 
         public LoopBackList(params T[] items)
         {
-            this.items = items;
+            _items = items;
         }
 
         public bool Contains(T value)
         {
-            return items.Contains(value);
+            return _items.Contains(value);
         }
 
         public void Add(T value)
         {
-            if (items.Length == 0)
+            if (_items.Length == 0)
             {
                 return;
             }
 
-            if (items.Contains(value))
+            if (_items.Contains(value))
             {
                 return;
             }
 
-            items[CursorPosition] = value;
+            _items[CursorPosition] = value;
             CursorPosition++;
-            if (CursorPosition >= items.Length)
+            if (CursorPosition >= _items.Length)
             {
                 CursorPosition = 0;
             }

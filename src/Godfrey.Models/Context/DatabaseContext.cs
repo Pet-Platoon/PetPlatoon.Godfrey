@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Godfrey.Models.Common;
 using Godfrey.Models.Configs;
 using Godfrey.Models.Configurations;
 using Godfrey.Models.Quotes;
@@ -25,9 +28,73 @@ namespace Godfrey.Models.Context
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.ApplyConfiguration(new ServerConfiguration());
             modelBuilder.ApplyConfiguration(new QuoteConfiguration());
+            modelBuilder.ApplyConfiguration(new ServerConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
+        }
+
+        public override int SaveChanges()
+        {
+            var concurrencyTokenEntries = ChangeTracker.Entries<IVersionedEntity>();
+            foreach (var entry in concurrencyTokenEntries)
+            {
+                if (entry.State == EntityState.Unchanged)
+                {
+                    continue;
+                }
+
+                entry.Entity.Version = Guid.NewGuid();
+            }
+
+            return base.SaveChanges();
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            var concurrencyTokenEntries = ChangeTracker.Entries<IVersionedEntity>();
+            foreach (var entry in concurrencyTokenEntries)
+            {
+                if (entry.State == EntityState.Unchanged)
+                {
+                    continue;
+                }
+
+                entry.Entity.Version = Guid.NewGuid();
+            }
+
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
+        {
+            var concurrencyTokenEntries = ChangeTracker.Entries<IVersionedEntity>();
+            foreach (var entry in concurrencyTokenEntries)
+            {
+                if (entry.State == EntityState.Unchanged)
+                {
+                    continue;
+                }
+
+                entry.Entity.Version = Guid.NewGuid();
+            }
+
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new CancellationToken())
+        {
+            var concurrencyTokenEntries = ChangeTracker.Entries<IVersionedEntity>();
+            foreach (var entry in concurrencyTokenEntries)
+            {
+                if (entry.State == EntityState.Unchanged)
+                {
+                    continue;
+                }
+
+                entry.Entity.Version = Guid.NewGuid();
+            }
+
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
     }
 
