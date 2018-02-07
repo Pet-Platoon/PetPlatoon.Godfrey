@@ -170,6 +170,13 @@ namespace Godfrey.Commands
 
                     var user = await ctx.User.GetUserAsync(uow);
 
+                    if (user.Coins == 0)
+                    {
+                        var embed = Constants.Embeds.Presets.Error(description: "Du besitzt keinen Coin");
+                        await ctx.RespondAsync(embed: embed);
+                        return;
+                    }
+
                     user.Coins--;
                     await uow.SaveChangesAsync();
                 }
