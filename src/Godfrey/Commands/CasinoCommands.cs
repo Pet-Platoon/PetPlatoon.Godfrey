@@ -32,6 +32,13 @@ namespace Godfrey.Commands
                 var user = await ctx.User.GetUserAsync(uow);
                 var toUser = await ctx.User.GetUserAsync(uow);
 
+                if (amount <= 0)
+                {
+                    embed = Constants.Embeds.Presets.Error(description: $"Wen willst du hier verarschen?");
+                    await ctx.RespondAsync(embed: embed);
+                    return;
+                }
+
                 if (user.Coins < amount)
                 {
                     embed = Constants.Embeds.Presets.Error(description: $"Du besitzt nur {user.Coins} Credits.");
@@ -63,6 +70,13 @@ namespace Godfrey.Commands
                 DiscordEmbedBuilder embed;
                 var user = await ctx.User.GetUserAsync(uow);
                 var stealFrom = await from.GetUserAsync(uow);
+
+                if (amount <= 0)
+                {
+                    embed = Constants.Embeds.Presets.Error(description: $"Wen willst du hier verarschen?");
+                    await ctx.RespondAsync(embed: embed);
+                    return;
+                }
 
                 if (user.Coins == 0)
                 {
