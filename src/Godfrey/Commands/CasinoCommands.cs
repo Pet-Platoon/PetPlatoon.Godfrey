@@ -15,20 +15,68 @@ namespace Godfrey.Commands
 {
     public class CasinoCommands : BaseCommandModule
     {
-        private const float Half = 1f / 2;
-        private const float Third = 1f / 3;
-        private const float TwoThirds = Third * 2;
+        internal const float Half = 1f / 2;
+        internal const float Third = 1f / 3;
+        internal const float TwoThirds = Third * 2;
 
-        private static readonly GodfreyCooldownAttribute Cooldown = new GodfreyCooldownAttribute(1, Constants.Quotes.Times.Downtime, CooldownBucketType.User);
+        private static readonly GodfreyCooldownAttribute DiceCooldown = new GodfreyCooldownAttribute(1, Constants.Quotes.Times.Downtime, CooldownBucketType.User);
+        private static readonly GodfreyCooldownAttribute CoinCooldown = new GodfreyCooldownAttribute(1, Constants.Quotes.Times.Downtime, CooldownBucketType.User);
+
+        [Command("give")]
+        public async Task GiveCommandAsync(CommandContext ctx, DiscordUser to, long amount)
+        {
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
+            {
+                DiscordEmbedBuilder embed;
+
+                var user = await ctx.User.GetUserAsync(uow);
+                var toUser = await ctx.User.GetUserAsync(uow);
+
+                if (user.Coins < amount)
+                {
+                    embed = Constants.Embeds.Presets.Error(description: $"Du besitzt nur {user.Coins} Credits.");
+                    await ctx.RespondAsync(embed: embed);
+                    return;
+                }
+
+                if (toUser.Coins + amount < amount)
+                {
+                    embed = Constants.Embeds.Presets.Error(description: $"{toUser.Name} kann nicht so viel Geld besitzen");
+                    await ctx.RespondAsync(embed: embed);
+                    return;
+                }
+
+                user.Coins -= amount;
+                toUser.Coins += amount;
+
+                embed = Constants.Embeds.Presets .Success(description: $"{user.Name} gibt {toUser.Name} {amount} Coins.");
+                await ctx.RespondAsync(embed: embed);
+                await uow.SaveChangesAsync();
+            }
+        }
 
         [Command("steal"), Aliases("loot"), GodfreyChannelType(Constants.Casino.Channel), GodfreyCooldown(1, 300, CooldownBucketType.User)]
-        public async Task StealCommandAsync(CommandContext ctx, DiscordUser from, ulong amount)
+        public async Task StealCommandAsync(CommandContext ctx, DiscordUser from, long amount)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
                 DiscordEmbedBuilder embed;
                 var user = await ctx.User.GetUserAsync(uow);
                 var stealFrom = await from.GetUserAsync(uow);
+
+                if (user.Coins == 0)
+                {
+                    embed = Constants.Embeds.Presets.Error(description: "Du besitzt keine Coins.");
+                    await ctx.RespondAsync(embed: embed);
+                    return;
+                }
+
+                if (stealFrom.Coins == 0)
+                {
+                    embed = Constants.Embeds.Presets.Error(description: $"{stealFrom.Name} besitzt keine Coins.");
+                    await ctx.RespondAsync(embed: embed);
+                    return;
+                }
 
                 var max = Math.Min(user.Coins, stealFrom.Coins);
                 amount = Math.Min(amount, max);
@@ -72,7 +120,7 @@ namespace Godfrey.Commands
 
         private async Task CasinoDiceCommandAsync(CommandContext ctx, DatabaseContext uow)
         {
-            if (!await Cooldown.ExecuteCheckAsync(ctx, false))
+            if (!await DiceCooldown.ExecuteCheckAsync(ctx, false))
             {
                 return;
             }
@@ -118,7 +166,7 @@ namespace Godfrey.Commands
             if (percentage >= TwoThirds)
             {
                 var coins = percentage * 6;
-                var transactCoins = (ulong)(coins - 3) * 5;
+                var transactCoins = (long)(coins - 3) * 5;
 
                 user.Coins += transactCoins;
 
@@ -163,7 +211,7 @@ namespace Godfrey.Commands
 
                 if (ctx.Channel.Id == channel)
                 {
-                    if (!await Cooldown.ExecuteCheckAsync(ctx, false))
+                    if (!await CoinCooldown.ExecuteCheckAsync(ctx, false))
                     {
                         return;
                     }
