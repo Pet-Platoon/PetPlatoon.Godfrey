@@ -64,8 +64,16 @@ namespace Godfrey.Commands
             }
         }
 
+        /// <summary>
+        /// Gives a specific user a specific amount of coins.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="to"></param>
+        /// <param name="amount"></param>
+        /// <returns></returns>
         [Command("give"), GodfreyChannelType(Constants.Casino.Channel)]
-        public async Task GiveCommandAsync(CommandContext ctx, DiscordUser to, long amount)
+        [Description("Gibt einem User eine bestimmte Menge an Coins.")]
+        public async Task GiveCommandAsync(CommandContext ctx, [Description("Der User, der die Coins erhalten soll.")] DiscordUser to, [Description("Die Menge, die man dem User geben möchte.")] long amount)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
@@ -105,7 +113,8 @@ namespace Godfrey.Commands
         }
 
         [Command("steal"), Aliases("loot"), GodfreyChannelType(Constants.Casino.Channel), GodfreyCooldown(1, 300, CooldownBucketType.User)]
-        public async Task StealCommandAsync(CommandContext ctx, DiscordUser from, long amount)
+        [Description("Startet den Versuch einem Mitspieler eine bestimme Menge an Coins zu stehlen. Es besteht eine 70/30 Chance, dass der User es **nicht** schaffst.")]
+        public async Task StealCommandAsync(CommandContext ctx, [Description("Der User, dem man die Coins stehlen möchte.")] DiscordUser from, [Description("Die menge, die man dem User stehlen möchte.")] long amount)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
@@ -158,7 +167,8 @@ namespace Godfrey.Commands
         }
 
         [Command("dice"), Aliases("würfel")]
-        public async Task DiceCommandAsync(CommandContext ctx, ushort sides = 6)
+        [Description("Wirft einen Würfel. In einem Casino Channel, werden die Sides auf 6 geforced. Im Casino wird um Coins gespielt. Ein Wurf kostet 5 Coins. Die Ergebnisse 1 und 2 liefern keinen Gewinn. Das Ergebnis 3 gleicht die Wurfkosten aus. 4, 5 und 6 geben jeweils 5, 10 und 15 Coins.")]
+        public async Task DiceCommandAsync(CommandContext ctx, [Description("Die Seiten des Würfels")] ushort sides = 6)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
@@ -259,6 +269,7 @@ namespace Godfrey.Commands
         }
 
         [Command("coin"), Aliases("münze")]
+        [Description("Wirf eine Münze, die entweder Kopf oder Zahl ausgibt. Im Casino kostet dieser Wurf eine Münze.")]
         public async Task CoinCommandAsync(CommandContext ctx)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -294,7 +305,8 @@ namespace Godfrey.Commands
         }
 
         [Command("top"), GodfreyChannelType(Constants.Casino.Channel)]
-        public async Task TopCommandAsync(CommandContext ctx, int many = 5)
+        [Description("Liefert eine bestimmte Anzahl an Usern mit den meisten Coins aus.")]
+        public async Task TopCommandAsync(CommandContext ctx, [Description("Die Menge an Usern, die ausgegeben werden soll.")] int many = 5)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
@@ -312,7 +324,8 @@ namespace Godfrey.Commands
         }
 
         [Command("info"), GodfreyChannelType(Constants.Casino.Channel)]
-        public async Task UserCommandAsync(CommandContext ctx, DiscordUser user = null)
+        [Description("Gibt aus wie viele Coins ein bestimmter User hat. Wenn kein User angegeben, wird der ausführende User genutzt.")]
+        public async Task UserCommandAsync(CommandContext ctx, [Description("Der User, welcher abgefragt werden soll.")] DiscordUser user = null)
         {
             if (user == null)
             {
