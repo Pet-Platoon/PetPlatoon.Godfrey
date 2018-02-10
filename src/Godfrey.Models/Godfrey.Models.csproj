@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,10 +10,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
-      <Version>2.0.0</Version>
+      <Version>2.0.1</Version>
     </PackageReference>
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql">
-      <Version>2.0.0.1</Version>
+      <Version>2.0.1</Version>
     </PackageReference>
   </ItemGroup>
 

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
@@ -11,18 +13,62 @@ using Godfrey.Extensions;
 using Godfrey.Models.Context;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Newtonsoft.Json.Linq;
 
 namespace Godfrey.Commands
 {
-    public class OwnerCommands
+    public class OwnerCommands : BaseCommandModule
     {
+        [Command("unicode"), RequireOwner]
+        public async Task UnicodeAsync(CommandContext ctx, [RemainingText] string text)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("```");
+
+            var chars = new Dictionary<char, string>();
+            
+            foreach (var character in text)
+            {
+                if (chars.ContainsKey(character))
+                {
+                    sb.AppendLine($"{character} | {chars[character]}");
+
+                    continue;
+                }
+
+                var value = string.Format("{0:X4}", (int)character);
+                var request = WebRequest.CreateHttp($"https://codepoints.net/api/v1/codepoint/{value}");
+                using (var response = await request.GetResponseAsync())
+                {
+                    using (var stream = response.GetResponseStream())
+                    {
+                        if (stream == null)
+                        {
+                            var embed = Constants.Embeds.Presets.Error(description: "Der Webserver antwortet nicht.");
+                            await ctx.RespondAsync(embed: embed);
+                            return;
+                        }
+
+                        using (var reader = new StreamReader(stream))
+                        {
+                            var json = JObject.Parse(await reader.ReadToEndAsync());
+                            var name = json.Value<string>("na");
+                            chars.Add(character, name);
+                            sb.AppendLine($"{character} | {name}");
+                        }
+                    }
+                }
+            }
+            sb.AppendLine("```");
+
+            await ctx.RespondAsync(sb.ToString());
+        }
+
         [Command("sql"), RequireOwner]
         public async Task SqlAsync(CommandContext ctx, [RemainingText] string sql)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                await ctx.MapToDatabaseAsync(uow);
-                
                 var reader = await uow.Database.ExecuteSqlQueryAsync(sql);
                 var read = reader.DbDataReader;
 
@@ -93,8 +139,6 @@ namespace Godfrey.Commands
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                await ctx.MapToDatabaseAsync(uow);
-
                 var cs1 = code.IndexOf("```", StringComparison.InvariantCulture) + 3;
                 cs1 = code.IndexOf('\n', cs1) + 1;
                 var cs2 = code.LastIndexOf("```", StringComparison.InvariantCulture);

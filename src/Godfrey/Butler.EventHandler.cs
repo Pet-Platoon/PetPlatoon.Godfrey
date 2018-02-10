@@ -12,11 +12,35 @@ namespace Godfrey
 {
     public partial class Butler
     {
-        private async Task GuildAvailable(GuildCreateEventArgs e)
+        private async Task OnReadyAsync(ReadyEventArgs e)
+        {
+            await Task.Run(() => OnReady());
+        }
+
+        private void OnReady()
+        {
+            Client.DebugLogger.LogMessage(LogLevel.Info, "Butler", $"Connected as {Client.CurrentUser.Username} on shard {Client.ShardId}", DateTime.UtcNow);
+        }
+
+        private async Task OnGuildAvailable(GuildCreateEventArgs e)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(ButlerConfig.ConnectionString))
             {
                 await e.Guild.GetServerAsync(uow);
+            }
+        }
+
+        private async Task OnMessageCreated(MessageCreateEventArgs e)
+        {
+            using (var uow = await DatabaseContextFactory.CreateAsync(ButlerConfig.ConnectionString))
+            {
+                var user = await e.Author.GetUserAsync(uow);
+
+                if (user.Name != e.Author.Username)
+                {
+                    user.Name = e.Author.Username;
+                    await uow.SaveChangesAsync();
+                }
             }
         }
 

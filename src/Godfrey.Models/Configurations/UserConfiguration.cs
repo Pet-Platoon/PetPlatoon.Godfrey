@@ -12,6 +12,10 @@ namespace Godfrey.Models.Configurations
                    .HasMaxLength(255)
                    .IsRequired();
 
+            builder.Property(e => e.Version)
+                   .IsConcurrencyToken()
+                   .IsRequired();
+
             builder.HasMany(u => u.AuthoredQuotes)
                    .WithOne(q => q.Author)
                    .HasForeignKey(q => q.AuthorId)

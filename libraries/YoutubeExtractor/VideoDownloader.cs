@@ -53,7 +53,7 @@ namespace YoutubeExtractor
                         int bytes;
                         var copiedBytes = 0;
 
-                        while (!cancel && (bytes = source.Read(buffer, 0, buffer.Length)) > 0)
+                        while (source != null && (!cancel && (bytes = source.Read(buffer, 0, buffer.Length)) > 0))
                         {
                             target.Write(buffer, 0, bytes);
 
