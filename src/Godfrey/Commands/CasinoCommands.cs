@@ -72,7 +72,7 @@ namespace Godfrey.Commands
                 DiscordEmbedBuilder embed;
 
                 var user = await ctx.User.GetUserAsync(uow);
-                var toUser = await ctx.User.GetUserAsync(uow);
+                var toUser = await to.GetUserAsync(uow);
 
                 if (amount <= 0)
                 {
