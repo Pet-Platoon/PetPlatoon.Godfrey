@@ -22,7 +22,49 @@ namespace Godfrey.Commands
         private static readonly GodfreyCooldownAttribute DiceCooldown = new GodfreyCooldownAttribute(1, Constants.Quotes.Times.Downtime, CooldownBucketType.User);
         private static readonly GodfreyCooldownAttribute CoinCooldown = new GodfreyCooldownAttribute(1, Constants.Quotes.Times.Downtime, CooldownBucketType.User);
 
-        [Command("give")]
+        [Command("casino"), RequireUserPermissions(Permissions.Administrator)]
+        public async Task CasinoCommandAsync(CommandContext ctx, bool removeOld = false)
+        {
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
+            {
+                DiscordEmbed embed;
+                var channel = await ctx.Guild.GetConfigValueAsync<ulong>(Constants.Casino.Channel, 0, uow);
+
+                if (channel != 0)
+                {
+                    if (ctx.Channel.Id == channel)
+                    {
+                        embed = Constants.Embeds.Presets.Output(description: "Der jetzige Channel ist bereits das Casino.");
+
+                        await ctx.RespondAsync(embed: embed);
+                        return;
+                    }
+
+                    if (!removeOld)
+                    {
+                        embed = Constants.Embeds.Presets.Error(description: "Es existiert bereits ein Casino für diesen Server. Um den jetzigen Channel als Casino zu nutzen, hänge ein `true` an den Befehl an");
+
+                        await ctx.RespondAsync(embed: embed);
+                        return;
+                    }
+
+                    channel = ctx.Channel.Id;
+                    await ctx.Guild.SetConfigValueAsync(Constants.Casino.Channel, channel, uow);
+
+                    embed = Constants.Embeds.Presets.Success(description: "Der Channel für das Casino wurde erfolgreich auf den jetzigen Channel geändert.");
+                    await ctx.RespondAsync(embed: embed);
+                    return;
+                }
+
+                channel = ctx.Channel.Id;
+                await ctx.Guild.SetConfigValueAsync(Constants.Casino.Channel, channel, uow);
+
+                embed = Constants.Embeds.Presets.Success(description: "Der Channel für das Casino wurde erfolgreich auf den jetzigen Channel gesetzt.");
+                await ctx.RespondAsync(embed: embed);
+            }
+        }
+
+        [Command("give"), GodfreyChannelType(Constants.Casino.Channel)]
         public async Task GiveCommandAsync(CommandContext ctx, DiscordUser to, long amount)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -31,6 +73,13 @@ namespace Godfrey.Commands
 
                 var user = await ctx.User.GetUserAsync(uow);
                 var toUser = await ctx.User.GetUserAsync(uow);
+
+                if (amount <= 0)
+                {
+                    embed = Constants.Embeds.Presets.Error(description: $"Wen willst du hier verarschen?");
+                    await ctx.RespondAsync(embed: embed);
+                    return;
+                }
 
                 if (user.Coins < amount)
                 {
@@ -63,6 +112,13 @@ namespace Godfrey.Commands
                 DiscordEmbedBuilder embed;
                 var user = await ctx.User.GetUserAsync(uow);
                 var stealFrom = await from.GetUserAsync(uow);
+
+                if (amount <= 0)
+                {
+                    embed = Constants.Embeds.Presets.Error(description: $"Wen willst du hier verarschen?");
+                    await ctx.RespondAsync(embed: embed);
+                    return;
+                }
 
                 if (user.Coins == 0)
                 {
@@ -236,88 +292,38 @@ namespace Godfrey.Commands
                                           .WithColor(DiscordColor.Cyan)
                                           .WithDescription($"{ctx.Member.Nickname ?? ctx.Member.Username} warf eine Münze und bekam {(value == 0 ? "Kopf" : "Zahl")}."));
         }
-    }
 
-    [Group("casino")]
-    public class CasinoSubCommands : BaseCommandModule
-    {
-        [GroupCommand, RequireUserPermissions(Permissions.Administrator)]
-        public async Task CasinoCommandAsync(CommandContext ctx, bool removeOld = false)
+        [Command("top"), GodfreyChannelType(Constants.Casino.Channel)]
+        public async Task TopCommandAsync(CommandContext ctx, int many = 5)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                DiscordEmbed embed;
-                var channel = await ctx.Guild.GetConfigValueAsync<ulong>(Constants.Casino.Channel, 0, uow);
+                many = Math.Min(Math.Max(1, many), 25);
+                var list = await uow.Users.OrderByDescending(x => x.Coins).Take(many).ToListAsync();
 
-                if (channel != 0)
+                var embed = Constants.Embeds.Presets.Output("Coin Toplist");
+                for (var i = 0; i < list.Count; i++)
                 {
-                    if (ctx.Channel.Id == channel)
-                    {
-                        embed = Constants.Embeds.Presets.Output(description: "Der jetzige Channel ist bereits das Casino.");
-
-                        await ctx.RespondAsync(embed: embed);
-                        return;
-                    }
-
-                    if (!removeOld)
-                    {
-                        embed = Constants.Embeds.Presets.Error(description: "Es existiert bereits ein Casino für diesen Server. Um den jetzigen Channel als Casino zu nutzen, hänge ein `true` an den Befehl an");
-
-                        await ctx.RespondAsync(embed: embed);
-                        return;
-                    }
-
-                    channel = ctx.Channel.Id;
-                    await ctx.Guild.SetConfigValueAsync(Constants.Casino.Channel, channel, uow);
-
-                    embed = Constants.Embeds.Presets.Success(description: "Der Channel für das Casino wurde erfolgreich auf den jetzigen Channel geändert.");
-                    await ctx.RespondAsync(embed: embed);
-                    return;
+                    embed.AddField($"{i + 1} {list[i].Name}", $"{list[i].Coins} Coins");
                 }
 
-                channel = ctx.Channel.Id;
-                await ctx.Guild.SetConfigValueAsync(Constants.Casino.Channel, channel, uow);
-
-                embed = Constants.Embeds.Presets.Success(description: "Der Channel für das Casino wurde erfolgreich auf den jetzigen Channel gesetzt.");
                 await ctx.RespondAsync(embed: embed);
             }
         }
 
-        [Group("stats"), GodfreyChannelType(Constants.Casino.Channel)]
-        public class StatsCommand : BaseCommandModule
+        [Command("info"), GodfreyChannelType(Constants.Casino.Channel)]
+        public async Task UserCommandAsync(CommandContext ctx, DiscordUser user = null)
         {
-            [GroupCommand, Command("top")]
-            public async Task TopCommandAsync(CommandContext ctx, int many = 5)
+            if (user == null)
             {
-                using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
-                {
-                    many = Math.Min(Math.Max(1, many), 25);
-                    var list = await uow.Users.OrderByDescending(x => x.Coins).Take(many).ToListAsync();
-
-                    var embed = Constants.Embeds.Presets.Output("Coin Toplist");
-                    for (var i = 0; i < list.Count; i++)
-                    {
-                        embed.AddField($"{i + 1} {list[i].Name}", $"{list[i].Coins} Coins");
-                    }
-
-                    await ctx.RespondAsync(embed: embed);
-                }
+                user = ctx.User;
             }
 
-            [Command("info"), GodfreyChannelType(Constants.Casino.Channel)]
-            public async Task UserCommandAsync(CommandContext ctx, DiscordUser user)
+            using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                if (user == null)
-                {
-                    user = ctx.User;
-                }
-
-                using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
-                {
-                    var usr = await user.GetUserAsync(uow);
-                    var embed = Constants.Embeds.Presets.Output("Coinauskunft", $"{usr.Name} besitzt {usr.Coins} Coins!");
-                    await ctx.RespondAsync(embed: embed);
-                }
+                var usr = await user.GetUserAsync(uow);
+                var embed = Constants.Embeds.Presets.Output("Coinauskunft", $"{usr.Name} besitzt {usr.Coins} Coins!");
+                await ctx.RespondAsync(embed: embed);
             }
         }
     }
