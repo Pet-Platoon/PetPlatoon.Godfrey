@@ -319,7 +319,7 @@ namespace Godfrey.Commands
             }
 
             [Command("info"), GodfreyChannelType(Constants.Casino.Channel)]
-            public async Task UserCommandAsync(CommandContext ctx, DiscordUser user)
+            public async Task UserCommandAsync(CommandContext ctx, DiscordUser user = null)
             {
                 if (user == null)
                 {
