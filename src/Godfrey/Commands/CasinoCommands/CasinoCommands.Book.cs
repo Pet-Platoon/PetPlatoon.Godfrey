@@ -9,6 +9,7 @@ using DSharpPlus.Entities;
 using Godfrey.Attributes;
 using Godfrey.Extensions;
 using Godfrey.Models.Context;
+using CooldownBucketType = Godfrey.Attributes.CooldownBucketType;
 
 namespace Godfrey.Commands.CasinoCommands
 {
@@ -282,7 +283,7 @@ namespace Godfrey.Commands.CasinoCommands
 
         #region Commands
 
-        [Command("bookofra"), Aliases("book", "ra", "bor"), GodfreyChannelType(Constants.Casino.Channel)]
+        [Command("bookofra"), Aliases("book", "ra", "bor"), GodfreyChannelType(Constants.Casino.Channel), GodfreyCooldown(1, 30, CooldownBucketType.User)]
         public async Task BookOfRaCommandAsync(CommandContext ctx, long bet)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
