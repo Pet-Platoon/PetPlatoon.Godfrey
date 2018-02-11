@@ -19,7 +19,7 @@ namespace Godfrey.Extensions
                 {
                     Id = member.Id,
                     Name = member.Username,
-                    Coins = 100
+                    Coins = 15
                 };
 
                 await context.Users.AddAsync(result);
@@ -40,7 +40,7 @@ namespace Godfrey.Extensions
                 {
                     Id = member.Id,
                     Name = member.Username,
-                    Coins = 100
+                    Coins = 15
                 };
 
                 await context.Users.AddAsync(result);

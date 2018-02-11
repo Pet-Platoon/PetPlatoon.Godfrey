@@ -291,6 +291,8 @@ namespace Godfrey.Commands.CasinoCommands
                 DiscordEmbedBuilder embed;
 
                 var user = await ctx.User.GetUserAsync(uow);
+                user.LastCasinoCommandIssued = DateTime.UtcNow;
+                await uow.SaveChangesAsync();
 
                 if (bet <= 0)
                 {

@@ -13,6 +13,7 @@ namespace Godfrey.Models.Users
         public string Name { get; set; }
         [ConcurrencyCheck]
         public long Coins { get; set; }
+        public DateTime LastCasinoCommandIssued { get; set; }
         public Guid Version { get; set; }
         public virtual ICollection<Quote> AuthoredQuotes { get; set; }
         public virtual ICollection<Quote> QuotedMessages { get; set; }
