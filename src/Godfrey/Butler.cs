@@ -75,7 +75,7 @@ namespace Godfrey
             };
             CommandsNextModule = Client.UseCommandsNext(cncfg);
             CommandsNextModule.RegisterCommands(GetType().GetTypeInfo().Assembly);
-            //CommandsNextModule.CommandErrored += OnCommandErrored;;
+            CommandsNextModule.CommandErrored += OnCommandErrored;;
         }
 
         public async Task RunAsync()

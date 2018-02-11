@@ -59,12 +59,12 @@ namespace Godfrey
                 Console.WriteLine(e.Exception.InnerException);
             }
 
-            var embedBuilder = new DiscordEmbedBuilder()
-                    .WithTitle("Ein Fehler ist aufgetreten!")
-                    .WithDescription($"Ein Fehler im Command `{e.Command?.QualifiedName ?? "<unknown command>"}` ist aufgetreten:{Environment.NewLine}```{e.Exception.Message}```")
-                    .WithColor(DiscordColor.Red);
-
-            await e.Context.RespondAsync(embed: embedBuilder.Build());
+            //var embedBuilder = new DiscordEmbedBuilder()
+            //        .WithTitle("Ein Fehler ist aufgetreten!")
+            //        .WithDescription($"Ein Fehler im Command `{e.Command?.QualifiedName ?? "<unknown command>"}` ist aufgetreten:{Environment.NewLine}```{e.Exception.Message}```")
+            //        .WithColor(DiscordColor.Red);
+            //
+            //await e.Context.RespondAsync(embed: embedBuilder.Build());
         }
     }
 }
