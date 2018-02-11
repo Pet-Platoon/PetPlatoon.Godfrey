@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
@@ -29,6 +30,8 @@ namespace Godfrey.Commands.CasinoCommands
                     }
 
                     var user = await ctx.User.GetUserAsync(uow);
+                    user.LastCasinoCommandIssued = DateTime.UtcNow;
+                    await uow.SaveChangesAsync();
 
                     if (user.Coins == 0)
                     {

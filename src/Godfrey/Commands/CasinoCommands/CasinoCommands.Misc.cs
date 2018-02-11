@@ -21,6 +21,8 @@ namespace Godfrey.Commands.CasinoCommands
 
                 var user = await ctx.User.GetUserAsync(uow);
                 var toUser = await to.GetUserAsync(uow);
+                user.LastCasinoCommandIssued = DateTime.UtcNow;
+                await uow.SaveChangesAsync();
 
                 if (amount <= 0)
                 {
@@ -61,6 +63,8 @@ namespace Godfrey.Commands.CasinoCommands
                 DiscordEmbedBuilder embed;
                 var user = await ctx.User.GetUserAsync(uow);
                 var stealFrom = await from.GetUserAsync(uow);
+                user.LastCasinoCommandIssued = DateTime.UtcNow;
+                await uow.SaveChangesAsync();
 
                 if (amount <= 0)
                 {
@@ -87,6 +91,11 @@ namespace Godfrey.Commands.CasinoCommands
                 amount = Math.Min(amount, max);
 
                 var percentage = Butler.RandomGenerator.NextDouble();
+
+                if (DateTime.UtcNow - stealFrom.LastCasinoCommandIssued > TimeSpan.FromDays(2))
+                {
+                    percentage = 1;
+                }
 
                 if (percentage < 0.7)
                 {

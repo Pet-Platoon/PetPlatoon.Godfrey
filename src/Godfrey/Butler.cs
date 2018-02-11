@@ -4,16 +4,14 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using CronNET;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Interactivity;
 using DSharpPlus.VoiceNext;
 using Godfrey.Collections;
-using Godfrey.Models.Context;
 using Newtonsoft.Json;
-// ReSharper disable UnusedAutoPropertyAccessor.Local
 
+// ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Godfrey
 {
     public partial class Butler
@@ -28,8 +26,6 @@ namespace Godfrey
         private VoiceNextExtension VoiceNextClient { get; }
         private InteractivityExtension InteractivityModule { get; }
         private CommandsNextExtension CommandsNextModule { get; }
-
-        private CronDaemon CronDaemon { get; }
 
         public Butler(int shardId)
         {
@@ -79,24 +75,7 @@ namespace Godfrey
             };
             CommandsNextModule = Client.UseCommandsNext(cncfg);
             CommandsNextModule.RegisterCommands(GetType().GetTypeInfo().Assembly);
-            //CommandsNextModule.CommandErrored += OnCommandErrored;
-
-            CronDaemon = new CronDaemon();
-            CronDaemon.AddJob("0 6 * * *", CasinoCronAction);
-            CronDaemon.Start();
-        }
-
-        private async void CasinoCronAction()
-        {
-            using (var uow = await DatabaseContextFactory.CreateAsync(ButlerConfig.ConnectionString))
-            {
-                foreach (var user in uow.Users)
-                {
-                    user.Coins += 15;
-                }
-
-                await uow.SaveChangesAsync();
-            }
+            //CommandsNextModule.CommandErrored += OnCommandErrored;;
         }
 
         public async Task RunAsync()

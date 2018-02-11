@@ -44,6 +44,7 @@ namespace Godfrey
             }
         }
 
+        // ReSharper disable once UnusedMember.Local
         private async Task OnCommandErrored(CommandErrorEventArgs e)
         {
             if (e.Exception is CommandNotFoundException)
