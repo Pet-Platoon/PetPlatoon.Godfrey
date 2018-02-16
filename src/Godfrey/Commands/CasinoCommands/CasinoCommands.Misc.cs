@@ -55,7 +55,7 @@ namespace Godfrey.Commands.CasinoCommands
         }
 
         [Command("steal"), Aliases("loot"), GodfreyChannelType(Constants.Casino.Channel), GodfreyCooldown(1, 300, Attributes.CooldownBucketType.User)]
-        [Description("Startet den Versuch einem Mitspieler eine bestimme Menge an Coins zu stehlen. Es besteht eine 70/30 Chance, dass der User es **nicht** schaffst.")]
+        [Description("Startet den Versuch einem Mitspieler eine bestimme Menge an Coins zu stehlen. Es besteht eine 70/30 Chance, dass der User es **nicht** schafft.")]
         public async Task StealCommandAsync(CommandContext ctx, [Description("Der User, dem man die Coins stehlen möchte.")] DiscordUser from, [Description("Die menge, die man dem User stehlen möchte.")] long amount)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
