@@ -7,18 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ben.Demystifier" Version="0.1.0" />
-    <PackageReference Include="DSharpPlus" Version="4.0.0-beta-00421" />
-    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-beta-00421" />
-    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-beta-00421" />
-    <PackageReference Include="DSharpPlus.Rest" Version="4.0.0-beta-00421" />
-    <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-beta-00421" />
-    <PackageReference Include="DSharpPlus.WebSocket.WebSocket4NetCore" Version="4.0.0-beta-00421" />
-    <PackageReference Include="Fluent.Task" Version="1.0.0.3" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting">
-      <Version>2.6.1</Version>
-    </PackageReference>
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="2.0.1" />
+    <PackageReference Include="Ben.Demystifier" Version="0.1.1" />
+    <PackageReference Include="DSharpPlus" Version="4.0.0-beta-00444" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-beta-00444" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-beta-00444" />
+    <PackageReference Include="DSharpPlus.Rest" Version="4.0.0-beta-00444" />
+    <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-beta-00444" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="2.6.1" />
   </ItemGroup>
 
   <ItemGroup>
