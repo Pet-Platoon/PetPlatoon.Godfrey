@@ -23,7 +23,7 @@ namespace YoutubeExtractor
 
                 for (i = 0; i < endByte - startByte; i++)
                 {
-                    dst[i] = (byte)(bytes[startByte + i] << shiftA | bytes[startByte + i + 1] >> shiftB);
+                    dst[i] = (byte)((bytes[startByte + i] << shiftA) | (bytes[startByte + i + 1] >> shiftB));
                 }
 
                 if (i < dst.Length)
@@ -32,7 +32,7 @@ namespace YoutubeExtractor
                 }
             }
 
-            dst[dst.Length - 1] &= (byte)(0xFF << dst.Length * 8 - length);
+            dst[dst.Length - 1] &= (byte)(0xFF << (dst.Length * 8 - length));
 
             return dst;
         }
@@ -44,7 +44,7 @@ namespace YoutubeExtractor
 
         public static int Read(ref ulong x, int length)
         {
-            var r = (int)(x >> 64 - length);
+            var r = (int)(x >> (64 - length));
             x <<= length;
             return r;
         }
@@ -58,7 +58,7 @@ namespace YoutubeExtractor
 
             for (var i = 0; i <= Math.Min(endByte - startByte, 7); i++)
             {
-                bits |= (ulong)bytes[startByte + i] << 56 - i * 8;
+                bits |= (ulong)bytes[startByte + i] << (56 - i * 8);
             }
 
             if (skipBits != 0)
@@ -73,8 +73,8 @@ namespace YoutubeExtractor
 
         public static void Write(ref ulong x, int length, int value)
         {
-            var mask = 0xFFFFFFFFFFFFFFFF >> 64 - length;
-            x = x << length | (ulong)value & mask;
+            var mask = 0xFFFFFFFFFFFFFFFF >> (64 - length);
+            x = (x << length) | ((ulong)value & mask);
         }
     }
 }

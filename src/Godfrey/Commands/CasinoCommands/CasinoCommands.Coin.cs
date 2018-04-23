@@ -12,9 +12,11 @@ namespace Godfrey.Commands.CasinoCommands
 {
     public partial class CasinoCommands
     {
-        private static readonly GodfreyCooldownAttribute CoinCooldown = new GodfreyCooldownAttribute(1, Constants.Quotes.Times.Downtime, CooldownBucketType.User);
+        private static readonly GodfreyCooldownAttribute CoinCooldown =
+                new GodfreyCooldownAttribute(1, Constants.Quotes.Times.Downtime, CooldownBucketType.User);
 
-        [Command("coin"), Aliases("münze")]
+        [Command("coin")]
+        [Aliases("münze")]
         [Description("Wirf eine Münze, die entweder Kopf oder Zahl ausgibt. Im Casino kostet dieser Wurf eine Münze.")]
         public async Task CoinCommandAsync(CommandContext ctx)
         {
@@ -47,7 +49,8 @@ namespace Godfrey.Commands.CasinoCommands
 
             var value = Butler.RandomGenerator.Next(0, 2);
             await ctx.RespondAsync(embed: new DiscordEmbedBuilder()
-                                          .WithAuthor(ctx.Member.Nickname ?? ctx.Member.Username, icon_url: ctx.Member.AvatarUrl)
+                                          .WithAuthor(ctx.Member.Nickname ?? ctx.Member.Username,
+                                                      icon_url: ctx.Member.AvatarUrl)
                                           .WithColor(DiscordColor.Cyan)
                                           .WithDescription($"{ctx.Member.Nickname ?? ctx.Member.Username} warf eine Münze und bekam {(value == 0 ? "Kopf" : "Zahl")}."));
         }

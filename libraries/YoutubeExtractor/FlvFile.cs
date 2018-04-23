@@ -12,7 +12,7 @@ namespace YoutubeExtractor
         private FileStream _fileStream;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FlvFile"/> class.
+        ///     Initializes a new instance of the <see cref="FlvFile" /> class.
         /// </summary>
         /// <param name="inputPath">The path of the input.</param>
         /// <param name="outputPath">The path of the output without extension.</param>
@@ -24,13 +24,13 @@ namespace YoutubeExtractor
             _fileLength = _fileStream.Length;
         }
 
-        public event EventHandler<ProgressEventArgs> ConversionProgressChanged;
-
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
+        public event EventHandler<ProgressEventArgs> ConversionProgressChanged;
 
         /// <exception cref="AudioExtractionException">The input file is not an FLV file.</exception>
         public void ExtractStreams()

@@ -30,13 +30,15 @@ namespace Godfrey.Helpers
             await uow.SaveChangesAsync();
         }
 
-        public static async Task<T> GetValueAsync<T>(DiscordGuild guild, string key, T defaultValue = default(T), DatabaseContext uow = null)
+        public static async Task<T> GetValueAsync<T>(DiscordGuild guild, string key, T defaultValue = default(T),
+                                                     DatabaseContext uow = null)
         {
             var cfg = await GetConfigAsync(guild, key, uow);
             return cfg == null ? defaultValue : JsonConvert.DeserializeObject<T>(cfg.Value);
         }
 
-        public static async Task<Config> SetValueAsync<T>(DiscordGuild guild, string key, T value, DatabaseContext uow = null)
+        public static async Task<Config> SetValueAsync<T>(DiscordGuild guild, string key, T value,
+                                                          DatabaseContext uow = null)
         {
             var cfg = await GetConfigAsync(guild, key, uow);
 
@@ -54,9 +56,9 @@ namespace Godfrey.Helpers
 
             cfg = new Config
             {
-                ServerId = guild.Id,
-                Key = key,
-                Value = JsonConvert.SerializeObject(value)
+                    ServerId = guild.Id,
+                    Key = key,
+                    Value = JsonConvert.SerializeObject(value)
             };
 
             await AddConfigAsync(cfg);

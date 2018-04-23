@@ -13,9 +13,12 @@ namespace Godfrey
 {
     internal static class Program
     {
-        private static void Main() => Run().Wait();
-
         private static TaskScheduler Scheduler { get; set; }
+
+        private static void Main()
+        {
+            Run().Wait();
+        }
 
         private static async Task Run()
         {
@@ -56,7 +59,8 @@ namespace Godfrey
             Console.WriteLine("Adding 15 coins to every user that was active in the last two days");
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
-                foreach (var user in uow.Users.Where(x => DateTime.UtcNow - x.LastCasinoCommandIssued <= TimeSpan.FromDays(2)))
+                foreach (var user in uow.Users.Where(x => DateTime.UtcNow - x.LastCasinoCommandIssued <=
+                                                          TimeSpan.FromDays(2)))
                 {
                     user.Coins += 15;
                 }

@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 namespace YoutubeExtractor
 {
     /// <summary>
-    /// Provides a method to get the download link of a YouTube video.
+    ///     Provides a method to get the download link of a YouTube video.
     /// </summary>
     public static class DownloadUrlResolver
     {
@@ -16,13 +16,15 @@ namespace YoutubeExtractor
         private const string SignatureQuery = "signature";
 
         /// <summary>
-        /// Decrypts the signature in the <see cref="VideoInfo.DownloadUrl" /> property and sets it
-        /// to the decrypted URL. Use this method, if you have decryptSignature in the <see
-        /// cref="GetDownloadUrls" /> method set to false.
+        ///     Decrypts the signature in the <see cref="VideoInfo.DownloadUrl" /> property and sets it
+        ///     to the decrypted URL. Use this method, if you have decryptSignature in the
+        ///     <see
+        ///         cref="GetDownloadUrls" />
+        ///     method set to false.
         /// </summary>
         /// <param name="videoInfo">The video info which's downlaod URL should be decrypted.</param>
         /// <exception cref="YoutubeParseException">
-        /// There was an error while deciphering the signature.
+        ///     There was an error while deciphering the signature.
         /// </exception>
         public static void DecryptDownloadUrl(VideoInfo videoInfo)
         {
@@ -44,31 +46,34 @@ namespace YoutubeExtractor
                     throw new YoutubeParseException("Could not decipher signature", ex);
                 }
 
-                videoInfo.DownloadUrl = HttpHelper.ReplaceQueryStringParameter(videoInfo.DownloadUrl, SignatureQuery, decrypted);
+                videoInfo.DownloadUrl =
+                        HttpHelper.ReplaceQueryStringParameter(videoInfo.DownloadUrl, SignatureQuery, decrypted);
                 videoInfo.RequiresDecryption = false;
             }
         }
 
         /// <summary>
-        /// Gets a list of <see cref="VideoInfo" />s for the specified URL.
+        ///     Gets a list of <see cref="VideoInfo" />s for the specified URL.
         /// </summary>
         /// <param name="videoUrl">The URL of the YouTube video.</param>
         /// <param name="decryptSignature">
-        /// A value indicating whether the video signatures should be decrypted or not. Decrypting
-        /// consists of a HTTP request for each <see cref="VideoInfo" />, so you may want to set
-        /// this to false and call <see cref="DecryptDownloadUrl" /> on your selected <see
-        /// cref="VideoInfo" /> later.
+        ///     A value indicating whether the video signatures should be decrypted or not. Decrypting
+        ///     consists of a HTTP request for each <see cref="VideoInfo" />, so you may want to set
+        ///     this to false and call <see cref="DecryptDownloadUrl" /> on your selected
+        ///     <see
+        ///         cref="VideoInfo" />
+        ///     later.
         /// </param>
         /// <returns>A list of <see cref="VideoInfo" />s that can be used to download the video.</returns>
         /// <exception cref="ArgumentNullException">
-        /// The <paramref name="videoUrl" /> parameter is <c>null</c>.
+        ///     The <paramref name="videoUrl" /> parameter is <c>null</c>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// The <paramref name="videoUrl" /> parameter is not a valid YouTube URL.
+        ///     The <paramref name="videoUrl" /> parameter is not a valid YouTube URL.
         /// </exception>
         /// <exception cref="VideoNotAvailableException">The video is not available.</exception>
         /// <exception cref="WebException">
-        /// An error occurred while downloading the YouTube page html.
+        ///     An error occurred while downloading the YouTube page html.
         /// </exception>
         /// <exception cref="YoutubeParseException">The Youtube page could not be parsed.</exception>
         public static IEnumerable<VideoInfo> GetDownloadUrls(string videoUrl, bool decryptSignature = true)
@@ -124,13 +129,13 @@ namespace YoutubeExtractor
         }
 
         /// <summary>
-        /// Normalizes the given YouTube URL to the format http://youtube.com/watch?v={youtube-id}
-        /// and returns whether the normalization was successful or not.
+        ///     Normalizes the given YouTube URL to the format http://youtube.com/watch?v={youtube-id}
+        ///     and returns whether the normalization was successful or not.
         /// </summary>
         /// <param name="url">The YouTube URL to normalize.</param>
         /// <param name="normalizedUrl">The normalized YouTube URL.</param>
         /// <returns>
-        /// <c>true</c>, if the normalization was successful; <c>false</c>, if the URL is invalid.
+        ///     <c>true</c>, if the normalization was successful; <c>false</c>, if the URL is invalid.
         /// </returns>
         public static bool TryNormalizeYoutubeUrl(string url, out string normalizedUrl)
         {
@@ -182,7 +187,9 @@ namespace YoutubeExtractor
 
                     url = string.Format("{0}&{1}={2}", queries["url"], SignatureQuery, signature);
 
-                    var fallbackHost = queries.ContainsKey("fallback_host") ? "&fallback_host=" + queries["fallback_host"] : string.Empty;
+                    var fallbackHost = queries.ContainsKey("fallback_host")
+                            ? "&fallback_host=" + queries["fallback_host"]
+                            : string.Empty;
 
                     url += fallbackHost;
                 }
@@ -246,7 +253,8 @@ namespace YoutubeExtractor
             return streamMapString;
         }
 
-        private static IEnumerable<VideoInfo> GetVideoInfos(IEnumerable<ExtractionInfo> extractionInfos, string videoTitle)
+        private static IEnumerable<VideoInfo> GetVideoInfos(IEnumerable<ExtractionInfo> extractionInfos,
+                                                            string videoTitle)
         {
             var downLoadInfos = new List<VideoInfo>();
 
@@ -262,9 +270,9 @@ namespace YoutubeExtractor
                 {
                     info = new VideoInfo(info)
                     {
-                        DownloadUrl = extractionInfo.Uri.ToString(),
-                        Title = videoTitle,
-                        RequiresDecryption = extractionInfo.RequiresDecryption
+                            DownloadUrl = extractionInfo.Uri.ToString(),
+                            Title = videoTitle,
+                            RequiresDecryption = extractionInfo.RequiresDecryption
                     };
                 }
 
@@ -272,7 +280,7 @@ namespace YoutubeExtractor
                 {
                     info = new VideoInfo(formatCode)
                     {
-                        DownloadUrl = extractionInfo.Uri.ToString()
+                            DownloadUrl = extractionInfo.Uri.ToString()
                     };
                 }
 
@@ -316,7 +324,8 @@ namespace YoutubeExtractor
         {
             throw new YoutubeParseException("Could not parse the Youtube page for URL " + videoUrl + "\n" +
                                             "This may be due to a change of the Youtube page structure.\n" +
-                                            "Please report this bug at www.github.com/flagbug/YoutubeExtractor/issues", innerException);
+                                            "Please report this bug at www.github.com/flagbug/YoutubeExtractor/issues",
+                                            innerException);
         }
 
         private class ExtractionInfo

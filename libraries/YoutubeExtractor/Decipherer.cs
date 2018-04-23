@@ -13,7 +13,9 @@ namespace YoutubeExtractor
             var js = HttpHelper.DownloadString(jsUrl);
 
             //Find "C" in this: var A = B.sig||C (B.s)
-            const string functNamePattern = @"\""signature"",\s?([a-zA-Z0-9\$]+)\("; //Regex Formed To Find Word or DollarSign
+            const string
+                    functNamePattern =
+                            @"\""signature"",\s?([a-zA-Z0-9\$]+)\("; //Regex Formed To Find Word or DollarSign
 
             var funcName = Regex.Match(js, functNamePattern).Groups[1].Value;
 
@@ -30,7 +32,8 @@ namespace YoutubeExtractor
             string functionIdentifier;
             var operations = "";
 
-            foreach (var line in lines.Skip(1).Take(lines.Length - 2)) //Matches the funcBody with each cipher method. Only runs till all three are defined.
+            foreach (var line in lines.Skip(1).Take(lines.Length - 2)
+            ) //Matches the funcBody with each cipher method. Only runs till all three are defined.
             {
                 if (!string.IsNullOrEmpty(idReverse) && !string.IsNullOrEmpty(idSlice) &&
                     !string.IsNullOrEmpty(idCharSwap))
@@ -39,23 +42,32 @@ namespace YoutubeExtractor
                 }
 
                 functionIdentifier = GetFunctionFromLine(line);
-                var reReverse = string.Format(@"{0}:\bfunction\b\(\w+\)", functionIdentifier); //Regex for reverse (one parameter)
-                var reSlice = string.Format(@"{0}:\bfunction\b\([a],b\).(\breturn\b)?.?\w+\.", functionIdentifier); //Regex for slice (return or not)
-                var reSwap = string.Format(@"{0}:\bfunction\b\(\w+\,\w\).\bvar\b.\bc=a\b", functionIdentifier); //Regex for the char swap.
+                var reReverse =
+                        string.Format(@"{0}:\bfunction\b\(\w+\)",
+                                      functionIdentifier); //Regex for reverse (one parameter)
+                var reSlice =
+                        string.Format(@"{0}:\bfunction\b\([a],b\).(\breturn\b)?.?\w+\.",
+                                      functionIdentifier); //Regex for slice (return or not)
+                var reSwap =
+                        string.Format(@"{0}:\bfunction\b\(\w+\,\w\).\bvar\b.\bc=a\b",
+                                      functionIdentifier); //Regex for the char swap.
 
                 if (Regex.Match(js, reReverse).Success)
                 {
-                    idReverse = functionIdentifier; //If def matched the regex for reverse then the current function is a defined as the reverse
+                    idReverse =
+                            functionIdentifier; //If def matched the regex for reverse then the current function is a defined as the reverse
                 }
 
                 if (Regex.Match(js, reSlice).Success)
                 {
-                    idSlice = functionIdentifier; //If def matched the regex for slice then the current function is defined as the slice.
+                    idSlice =
+                            functionIdentifier; //If def matched the regex for slice then the current function is defined as the slice.
                 }
 
                 if (Regex.Match(js, reSwap).Success)
                 {
-                    idCharSwap = functionIdentifier; //If def matched the regex for charSwap then the current function is defined as swap.
+                    idCharSwap =
+                            functionIdentifier; //If def matched the regex for charSwap then the current function is defined as swap.
                 }
             }
 
@@ -93,16 +105,16 @@ namespace YoutubeExtractor
                     return new string(cipher.ToCharArray().Reverse().ToArray());
 
                 case 'w':
-                    {
-                        var index = GetOpIndex(op);
-                        return SwapFirstChar(cipher, index);
-                    }
+                {
+                    var index = GetOpIndex(op);
+                    return SwapFirstChar(cipher, index);
+                }
 
                 case 's':
-                    {
-                        var index = GetOpIndex(op);
-                        return cipher.Substring(index);
-                    }
+                {
+                    var index = GetOpIndex(op);
+                    return cipher.Substring(index);
+                }
 
                 default:
                     throw new NotImplementedException("Couldn't find cipher operation.");
@@ -112,7 +124,7 @@ namespace YoutubeExtractor
         private static string DecipherWithOperations(string cipher, string operations)
         {
             return operations.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries)
-                .Aggregate(cipher, ApplyOperation);
+                             .Aggregate(cipher, ApplyOperation);
         }
 
         private static string GetFunctionFromLine(string currentLine)
@@ -135,8 +147,8 @@ namespace YoutubeExtractor
         {
             var builder = new StringBuilder(cipher)
             {
-                [0] = cipher[index],
-                [index] = cipher[0]
+                    [0] = cipher[index],
+                    [index] = cipher[0]
             };
 
             return builder.ToString();

@@ -8,38 +8,41 @@ namespace Godfrey.Extensions
 {
     public static class DatabaseFacadeExtensions
     {
-        public static RelationalDataReader ExecuteSqlQuery(this DatabaseFacade databaseFacade, string sql, params object[] parameters)
+        public static RelationalDataReader ExecuteSqlQuery(this DatabaseFacade databaseFacade, string sql,
+                                                           params object[] parameters)
         {
             var concurrencyDetector = databaseFacade.GetService<IConcurrencyDetector>();
 
             using (concurrencyDetector.EnterCriticalSection())
             {
                 var rawSqlCommand = databaseFacade
-                        .GetService<IRawSqlCommandBuilder>()
-                        .Build(sql, parameters);
+                                    .GetService<IRawSqlCommandBuilder>()
+                                    .Build(sql, parameters);
 
                 return rawSqlCommand
-                        .RelationalCommand
-                        .ExecuteReader(databaseFacade.GetService<IRelationalConnection>(),
-                                       rawSqlCommand.ParameterValues);
+                       .RelationalCommand
+                       .ExecuteReader(databaseFacade.GetService<IRelationalConnection>(),
+                                      rawSqlCommand.ParameterValues);
             }
         }
 
-        public static async Task<RelationalDataReader> ExecuteSqlQueryAsync(this DatabaseFacade databaseFacade, string sql, CancellationToken cancellationToken = default(CancellationToken), params object[] parameters)
+        public static async Task<RelationalDataReader> ExecuteSqlQueryAsync(
+                this DatabaseFacade databaseFacade, string sql,
+                CancellationToken cancellationToken = default(CancellationToken), params object[] parameters)
         {
             var concurrencyDetector = databaseFacade.GetService<IConcurrencyDetector>();
 
             using (await concurrencyDetector.EnterCriticalSectionAsync(cancellationToken))
             {
                 var rawSqlCommand = databaseFacade
-                        .GetService<IRawSqlCommandBuilder>()
-                        .Build(sql, parameters);
+                                    .GetService<IRawSqlCommandBuilder>()
+                                    .Build(sql, parameters);
 
                 return await rawSqlCommand
-                              .RelationalCommand
-                              .ExecuteReaderAsync(databaseFacade.GetService<IRelationalConnection>(),
-                                                  rawSqlCommand.ParameterValues,
-                                                  cancellationToken);
+                             .RelationalCommand
+                             .ExecuteReaderAsync(databaseFacade.GetService<IRelationalConnection>(),
+                                                 rawSqlCommand.ParameterValues,
+                                                 cancellationToken);
             }
         }
     }

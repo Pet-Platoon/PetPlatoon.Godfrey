@@ -13,9 +13,12 @@ namespace Godfrey.Commands.CasinoCommands
 {
     public partial class CasinoCommands
     {
-        [Command("top"), GodfreyChannelType(Constants.Casino.Channel)]
+        [Command("top")]
+        [GodfreyChannelType(Constants.Casino.Channel)]
         [Description("Liefert eine bestimmte Anzahl an Usern mit den meisten Coins aus.")]
-        public async Task TopCommandAsync(CommandContext ctx, [Description("Die Menge an Usern, die ausgegeben werden soll.")] int many = 5)
+        public async Task TopCommandAsync(CommandContext ctx,
+                                          [Description("Die Menge an Usern, die ausgegeben werden soll.")]
+                                          int many = 5)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
@@ -32,9 +35,12 @@ namespace Godfrey.Commands.CasinoCommands
             }
         }
 
-        [Command("info"), GodfreyChannelType(Constants.Casino.Channel)]
-        [Description("Gibt aus wie viele Coins ein bestimmter User hat. Wenn kein User angegeben, wird der ausführende User genutzt.")]
-        public async Task UserCommandAsync(CommandContext ctx, [Description("Der User, welcher abgefragt werden soll.")] DiscordUser user = null)
+        [Command("info")]
+        [GodfreyChannelType(Constants.Casino.Channel)]
+        [Description(
+                "Gibt aus wie viele Coins ein bestimmter User hat. Wenn kein User angegeben, wird der ausführende User genutzt.")]
+        public async Task UserCommandAsync(CommandContext ctx, [Description("Der User, welcher abgefragt werden soll.")]
+                                           DiscordUser user = null)
         {
             if (user == null)
             {

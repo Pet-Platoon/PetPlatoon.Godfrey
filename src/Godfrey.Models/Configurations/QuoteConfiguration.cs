@@ -8,7 +8,6 @@ namespace Godfrey.Models.Configurations
     {
         public void Configure(EntityTypeBuilder<Quote> builder)
         {
-
         }
     }
 }

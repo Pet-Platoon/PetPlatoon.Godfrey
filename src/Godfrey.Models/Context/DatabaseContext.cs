@@ -21,7 +21,6 @@ namespace Godfrey.Models.Context
 
         public DatabaseContext(DbContextOptions options) : base(options)
         {
-
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -81,7 +80,8 @@ namespace Godfrey.Models.Context
             return base.SaveChangesAsync(cancellationToken);
         }
 
-        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new CancellationToken())
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+                                                   CancellationToken cancellationToken = new CancellationToken())
         {
             var concurrencyTokenEntries = ChangeTracker.Entries<IVersionedEntity>();
             foreach (var entry in concurrencyTokenEntries)
@@ -100,7 +100,6 @@ namespace Godfrey.Models.Context
 
     public static class DatabaseContextFactory
     {
-
         public static DatabaseContext Create(string connectionString)
         {
             return CreateAsync(connectionString).GetAwaiter().GetResult();
@@ -109,7 +108,7 @@ namespace Godfrey.Models.Context
         public static async Task<DatabaseContext> CreateAsync(string connectionString)
         {
             var optionsBuilder = new DbContextOptionsBuilder()
-                .UseMySql(connectionString);
+                    .UseMySql(connectionString);
 
             var context = new DatabaseContext(optionsBuilder.Options);
             await context.Database.EnsureCreatedAsync();

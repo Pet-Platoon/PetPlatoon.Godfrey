@@ -7,7 +7,7 @@ namespace Godfrey.Models.Servers
     {
         public ulong UserId { get; set; }
         public virtual User User { get; set; }
-        
+
         public ulong ServerId { get; set; }
         public virtual Server Server { get; set; }
     }

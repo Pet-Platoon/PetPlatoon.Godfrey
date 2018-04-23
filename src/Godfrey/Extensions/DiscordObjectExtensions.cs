@@ -17,9 +17,9 @@ namespace Godfrey.Extensions
             {
                 result = new User
                 {
-                    Id = member.Id,
-                    Name = member.Username,
-                    Coins = 15
+                        Id = member.Id,
+                        Name = member.Username,
+                        Coins = 15
                 };
 
                 await context.Users.AddAsync(result);
@@ -38,9 +38,9 @@ namespace Godfrey.Extensions
             {
                 result = new User
                 {
-                    Id = member.Id,
-                    Name = member.Username,
-                    Coins = 15
+                        Id = member.Id,
+                        Name = member.Username,
+                        Coins = 15
                 };
 
                 await context.Users.AddAsync(result);
@@ -59,9 +59,9 @@ namespace Godfrey.Extensions
             {
                 result = new Server
                 {
-                    Id = guild.Id,
-                    Name = guild.Name,
-                    Owner = await guild.Owner.GetUserAsync(context)
+                        Id = guild.Id,
+                        Name = guild.Name,
+                        Owner = await guild.Owner.GetUserAsync(context)
                 };
 
                 await context.Servers.AddAsync(result);
@@ -81,16 +81,19 @@ namespace Godfrey.Extensions
             return result;
         }
 
-        public static async Task<ServerMember> GetServerMemberAsync(this Server server, User user, DatabaseContext context)
+        public static async Task<ServerMember> GetServerMemberAsync(this Server server, User user,
+                                                                    DatabaseContext context)
         {
-            var result = await context.ServerMembers.FirstOrDefaultAsync(x => x.ServerId == server.Id && x.UserId == user.Id);
+            var result =
+                    await context.ServerMembers.FirstOrDefaultAsync(x => x.ServerId == server.Id &&
+                                                                         x.UserId == user.Id);
 
             if (result == null)
             {
                 result = new ServerMember
                 {
-                    ServerId = server.Id,
-                    UserId = user.Id
+                        ServerId = server.Id,
+                        UserId = user.Id
                 };
 
                 await context.ServerMembers.AddAsync(result);

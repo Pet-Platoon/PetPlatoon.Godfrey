@@ -18,13 +18,14 @@ namespace Godfrey.Extensions
             return ConfigHelper.AddConfigAsync(config, uow);
         }
 
-        public static Task<T> GetConfigValueAsync<T>(this DiscordGuild guild, string key, T defaultValue = default(T), DatabaseContext uow = null)
+        public static Task<T> GetConfigValueAsync<T>(this DiscordGuild guild, string key, T defaultValue = default(T),
+                                                     DatabaseContext uow = null)
         {
             return ConfigHelper.GetValueAsync(guild, key, defaultValue, uow);
         }
 
         public static Task<Config> SetConfigValueAsync<T>(this DiscordGuild guild, string key, T value,
-                                                    DatabaseContext uow = null)
+                                                          DatabaseContext uow = null)
         {
             return ConfigHelper.SetValueAsync(guild, key, value, uow);
         }

@@ -11,10 +11,11 @@ namespace Godfrey.Models.Users
     public class User : BaseKeyEntity<ulong>, IVersionedEntity
     {
         public string Name { get; set; }
+
         [ConcurrencyCheck]
         public long Coins { get; set; }
+
         public DateTime LastCasinoCommandIssued { get; set; }
-        public Guid Version { get; set; }
         public virtual ICollection<Quote> AuthoredQuotes { get; set; }
         public virtual ICollection<Quote> QuotedMessages { get; set; }
         public virtual ICollection<Server> OwnedServers { get; set; }
@@ -29,5 +30,7 @@ namespace Godfrey.Models.Users
             OwnedServers = new HashSet<Server>();
             Servers = new HashSet<ServerMember>();
         }
+
+        public Guid Version { get; set; }
     }
 }

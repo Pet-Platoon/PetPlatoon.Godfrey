@@ -20,6 +20,8 @@ namespace YoutubeExtractor
         private uint _totalFrameLength;
         private bool _writeVbrHeader;
 
+        public IEnumerable<string> Warnings => _warnings;
+
         public Mp3AudioExtractor(string path)
         {
             VideoPath = path;
@@ -31,11 +33,6 @@ namespace YoutubeExtractor
         }
 
         public string VideoPath { get; }
-
-        public IEnumerable<string> Warnings
-        {
-            get { return _warnings; }
-        }
 
         public void Dispose()
         {
@@ -68,9 +65,7 @@ namespace YoutubeExtractor
 
         private static int GetFrameDataOffset(int mpegVersion, int channelMode)
         {
-            return 4 + (mpegVersion == 3 ?
-                (channelMode == 3 ? 17 : 32) :
-                (channelMode == 3 ? 9 : 17));
+            return 4 + (mpegVersion == 3 ? (channelMode == 3 ? 17 : 32) : (channelMode == 3 ? 9 : 17));
         }
 
         private static int GetFrameLength(int mpegVersion, int bitRate, int sampleRate, int padding)
@@ -218,8 +213,10 @@ namespace YoutubeExtractor
                 BitHelper.CopyBytes(buffer, 0, BigEndianBitConverter.GetBytes(header));
                 BitHelper.CopyBytes(buffer, dataOffset, BigEndianBitConverter.GetBytes(0x58696E67)); // "Xing"
                 BitHelper.CopyBytes(buffer, dataOffset + 4, BigEndianBitConverter.GetBytes((uint)0x7)); // Flags
-                BitHelper.CopyBytes(buffer, dataOffset + 8, BigEndianBitConverter.GetBytes((uint)_frameOffsets.Count)); // Frame count
-                BitHelper.CopyBytes(buffer, dataOffset + 12, BigEndianBitConverter.GetBytes(_totalFrameLength)); // File length
+                BitHelper.CopyBytes(buffer, dataOffset + 8,
+                                    BigEndianBitConverter.GetBytes((uint)_frameOffsets.Count)); // Frame count
+                BitHelper.CopyBytes(buffer, dataOffset + 12,
+                                    BigEndianBitConverter.GetBytes(_totalFrameLength)); // File length
 
                 for (var i = 0; i < 100; i++)
                 {

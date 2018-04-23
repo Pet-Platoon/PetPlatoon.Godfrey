@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace YoutubeExtractor
 {
@@ -26,7 +27,9 @@ namespace YoutubeExtractor
                 s = s.Substring(s.IndexOf('?') + 1);
             }
 
-            return Regex.Split(s, "&").Select(vp => Regex.Split(vp, "=")).ToDictionary(strings => strings[0], strings => strings.Length == 2 ? UrlDecode(strings[1]) : string.Empty);
+            return Regex.Split(s, "&").Select(vp => Regex.Split(vp, "="))
+                        .ToDictionary(strings => strings[0],
+                                      strings => strings.Length == 2 ? UrlDecode(strings[1]) : string.Empty);
         }
 
         public static string ReplaceQueryStringParameter(string currentPageUrl, string paramToReplace, string newValue)
@@ -54,7 +57,7 @@ namespace YoutubeExtractor
 
             var uriBuilder = new UriBuilder(currentPageUrl)
             {
-                Query = resultQuery.ToString()
+                    Query = resultQuery.ToString()
             };
 
             return uriBuilder.ToString();
@@ -62,7 +65,7 @@ namespace YoutubeExtractor
 
         public static string UrlDecode(string url)
         {
-            return System.Web.HttpUtility.UrlDecode(url);
+            return HttpUtility.UrlDecode(url);
         }
     }
 }

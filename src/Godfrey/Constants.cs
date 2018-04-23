@@ -7,6 +7,10 @@ namespace Godfrey
     {
         public static class Quotes
         {
+            public const string Loopbacks = "quote.loopbacks";
+            public const string Foreigns = "quote.foreigns";
+            public const string HideNotSafeForWork = "quote.hidensfw";
+
             public static class Times
             {
                 public const double Downtime = 90;
@@ -17,10 +21,6 @@ namespace Godfrey
                 public const string Users = "quote.permission.users";
                 public const string Roles = "quote.permission.roles";
             }
-
-            public const string Loopbacks = "quote.loopbacks";
-            public const string Foreigns = "quote.foreigns";
-            public const string HideNotSafeForWork = "quote.hidensfw";
         }
 
         public static class Casino
@@ -41,22 +41,34 @@ namespace Godfrey
 
             public static class Presets
             {
-                private static DiscordEmbedBuilder Build(string title, string description = "") => new DiscordEmbedBuilder()
-                                                                                                   .WithTitle(title)
-                                                                                                   .WithDescription(description)
-                                                                                                   .WithTimestamp(DateTime.UtcNow);
+                private static DiscordEmbedBuilder Build(string title, string description = "")
+                {
+                    return new DiscordEmbedBuilder()
+                           .WithTitle(title)
+                           .WithDescription(description)
+                           .WithTimestamp(DateTime.UtcNow);
+                }
 
                 public static DiscordEmbedBuilder Success(string title = "Erfolgreich ausgeführt",
-                                                          string description = "") => Build(title, description)
-                                                                                      .WithColor(Colors.Success);
+                                                          string description = "")
+                {
+                    return Build(title, description)
+                            .WithColor(Colors.Success);
+                }
 
                 public static DiscordEmbedBuilder Error(string title = "Es ist ein Fehler aufgetreten",
-                                                        string description = "") => Build(title, description)
-                                                                                    .WithColor(Colors.Error);
+                                                        string description = "")
+                {
+                    return Build(title, description)
+                            .WithColor(Colors.Error);
+                }
 
                 public static DiscordEmbedBuilder Output(string title = "Information",
-                                                         string description = "") => Build(title, description)
-                                                                                     .WithColor(Colors.Output);
+                                                         string description = "")
+                {
+                    return Build(title, description)
+                            .WithColor(Colors.Output);
+                }
             }
         }
     }

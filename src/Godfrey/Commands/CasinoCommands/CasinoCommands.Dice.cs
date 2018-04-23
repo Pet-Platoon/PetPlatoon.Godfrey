@@ -12,12 +12,15 @@ namespace Godfrey.Commands.CasinoCommands
 {
     public partial class CasinoCommands
     {
+        private static readonly GodfreyCooldownAttribute DiceCooldown =
+                new GodfreyCooldownAttribute(1, Constants.Quotes.Times.Downtime, CooldownBucketType.User);
 
-        private static readonly GodfreyCooldownAttribute DiceCooldown = new GodfreyCooldownAttribute(1, Constants.Quotes.Times.Downtime, CooldownBucketType.User);
-
-        [Command("dice"), Aliases("würfel")]
-        [Description("Wirft einen Würfel. In einem Casino Channel, werden die Sides auf 6 geforced. Im Casino wird um Coins gespielt. Ein Wurf kostet 5 Coins. Die Ergebnisse 1 und 2 liefern keinen Gewinn. Das Ergebnis 3 gleicht die Wurfkosten aus. 4, 5 und 6 geben jeweils 5, 10 und 15 Coins.")]
-        public async Task DiceCommandAsync(CommandContext ctx, [Description("Die Seiten des Würfels")] ushort sides = 6)
+        [Command("dice")]
+        [Aliases("würfel")]
+        [Description(
+                "Wirft einen Würfel. In einem Casino Channel, werden die Sides auf 6 geforced. Im Casino wird um Coins gespielt. Ein Wurf kostet 5 Coins. Die Ergebnisse 1 und 2 liefern keinen Gewinn. Das Ergebnis 3 gleicht die Wurfkosten aus. 4, 5 und 6 geben jeweils 5, 10 und 15 Coins.")]
+        public async Task DiceCommandAsync(CommandContext ctx, [Description("Die Seiten des Würfels")]
+                                           ushort sides = 6)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
             {
@@ -47,8 +50,8 @@ namespace Godfrey.Commands.CasinoCommands
             if (user.Coins < 5)
             {
                 await ctx.RespondAsync(embed: new DiscordEmbedBuilder()
-                                                  .WithColor(DiscordColor.Red)
-                                                  .WithDescription($"Du hast nicht genügend Coins um mitzuspielen. Fuck off m8 <3 ({user.Coins}/5 Coins)"));
+                                              .WithColor(DiscordColor.Red)
+                                              .WithDescription($"Du hast nicht genügend Coins um mitzuspielen. Fuck off m8 <3 ({user.Coins}/5 Coins)"));
                 return;
             }
 
@@ -61,8 +64,8 @@ namespace Godfrey.Commands.CasinoCommands
                 user.Coins -= 5;
 
                 await ctx.RespondAsync(embed: new DiscordEmbedBuilder()
-                                               .WithColor(DiscordColor.Green)
-                                               .WithDescription($"{user.Name} würfelt eine {value} mit einem w6-Würfel. Du verlierst 5 Coins. Du besitzt nun {user.Coins}"));
+                                              .WithColor(DiscordColor.Green)
+                                              .WithDescription($"{user.Name} würfelt eine {value} mit einem w6-Würfel. Du verlierst 5 Coins. Du besitzt nun {user.Coins}"));
 
                 await uow.SaveChangesAsync();
 
@@ -72,8 +75,8 @@ namespace Godfrey.Commands.CasinoCommands
             if (percentage < TwoThirds)
             {
                 await ctx.RespondAsync(embed: new DiscordEmbedBuilder()
-                                               .WithColor(DiscordColor.Green)
-                                               .WithDescription($"{user.Name} würfelt eine {value} mit einem w6-Würfel. Du erhältst keine Coins. Du besitzt nun {user.Coins}"));
+                                              .WithColor(DiscordColor.Green)
+                                              .WithDescription($"{user.Name} würfelt eine {value} mit einem w6-Würfel. Du erhältst keine Coins. Du besitzt nun {user.Coins}"));
 
                 await uow.SaveChangesAsync();
 
@@ -88,8 +91,8 @@ namespace Godfrey.Commands.CasinoCommands
                 user.Coins += transactCoins;
 
                 await ctx.RespondAsync(embed: new DiscordEmbedBuilder()
-                                               .WithColor(DiscordColor.Green)
-                                               .WithDescription($"{user.Name} würfelt eine {value} mit einem w6-Würfel. Du erhältst nun {transactCoins} Coins. Du besitzt nun {user.Coins}"));
+                                              .WithColor(DiscordColor.Green)
+                                              .WithDescription($"{user.Name} würfelt eine {value} mit einem w6-Würfel. Du erhältst nun {transactCoins} Coins. Du besitzt nun {user.Coins}"));
 
                 await uow.SaveChangesAsync();
             }

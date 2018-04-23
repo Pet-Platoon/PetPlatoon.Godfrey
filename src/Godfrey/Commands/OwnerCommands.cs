@@ -19,14 +19,15 @@ namespace Godfrey.Commands
 {
     public class OwnerCommands : BaseCommandModule
     {
-        [Command("unicode"), RequireOwner]
+        [Command("unicode")]
+        [RequireOwner]
         public async Task UnicodeAsync(CommandContext ctx, [RemainingText] string text)
         {
             var sb = new StringBuilder();
             sb.AppendLine("```");
 
             var chars = new Dictionary<char, string>();
-            
+
             foreach (var character in text)
             {
                 if (chars.ContainsKey(character))
@@ -59,12 +60,14 @@ namespace Godfrey.Commands
                     }
                 }
             }
+
             sb.AppendLine("```");
 
             await ctx.RespondAsync(sb.ToString());
         }
 
-        [Command("sql"), RequireOwner]
+        [Command("sql")]
+        [RequireOwner]
         public async Task SqlAsync(CommandContext ctx, [RemainingText] string sql)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -75,9 +78,9 @@ namespace Godfrey.Commands
                 if (!read.HasRows)
                 {
                     await ctx.RespondAsync(embed: new DiscordEmbedBuilder()
-                                                   .WithTitle("Keine Ergebnisse.")
-                                                   .WithDescription($"Es wurden keine Ergebnisse für die SQL-Query ``{sql}`` gefunden.")
-                                                   .WithColor(DiscordColor.Red).Build());
+                                                  .WithTitle("Keine Ergebnisse.")
+                                                  .WithDescription($"Es wurden keine Ergebnisse für die SQL-Query ``{sql}`` gefunden.")
+                                                  .WithColor(DiscordColor.Red).Build());
                     return;
                 }
 
@@ -102,7 +105,8 @@ namespace Godfrey.Commands
                 var items = new List<string>();
                 for (var i = 0; i < data.Count; i++)
                 {
-                    lengths[i] = data[data.Keys.ElementAt(i)].Aggregate("", (max, cur) => max.Length > cur.Length ? max : cur).Length;
+                    lengths[i] = data[data.Keys.ElementAt(i)]
+                                 .Aggregate("", (max, cur) => max.Length > cur.Length ? max : cur).Length;
 
                     if (data.Keys.ElementAt(i).Length > lengths[i])
                     {
@@ -123,7 +127,9 @@ namespace Godfrey.Commands
                 for (var i = 0; i < data.ElementAt(0).Value.Count; i++)
                 {
                     // ReSharper disable once AccessToModifiedClosure
-                    items.AddRange(data.Select((t, j) => $"{{0,{lengths[j]}}}").Select((formatter, j) => string.Format(formatter, data[data.Keys.ElementAt(j)][i])));
+                    items.AddRange(data.Select((t, j) => $"{{0,{lengths[j]}}}")
+                                       .Select((formatter, j) =>
+                                                       string.Format(formatter, data[data.Keys.ElementAt(j)][i])));
 
                     var row = string.Join(" | ", items);
                     sb.AppendLine(row);
@@ -134,7 +140,9 @@ namespace Godfrey.Commands
             }
         }
 
-        [Command("eval"), Description("Evaluates C# code."), RequireOwner]
+        [Command("eval")]
+        [Description("Evaluates C# code.")]
+        [RequireOwner]
         public async Task EvalAsync(CommandContext ctx, [RemainingText] string code)
         {
             using (var uow = await DatabaseContextFactory.CreateAsync(Butler.ButlerConfig.ConnectionString))
@@ -151,17 +159,26 @@ namespace Godfrey.Commands
                 var cs = code.Substring(cs1, cs2 - cs1);
 
                 var msg = await ctx.RespondAsync("", embed: new DiscordEmbedBuilder()
-                                                                    .WithColor(DiscordColor.Rose)
-                                                                    .WithDescription("Evaluating...")
-                                                                    .Build()).ConfigureAwait(false);
+                                                            .WithColor(DiscordColor.Rose)
+                                                            .WithDescription("Evaluating...")
+                                                            .Build()).ConfigureAwait(false);
 
                 try
                 {
                     var globals = new EvalParameters(ctx, uow);
-                    
+
                     var sopts = ScriptOptions.Default;
-                    sopts.AddImports("System", "System.Collections.Generic", "System.Linq", "System.Text", "System.Threading.Tasks", "Microsoft.EntityFrameworkCore", "Microsoft.EntityFrameworkCore.Extensions.Internal", "DSharpPlus", "DSharpPlus.CommandsNext", "DSharpPlus.Interactivity", "Godfrey", "Godfrey.Collections", "Godfrey.Commands", "Godfrey.Exceptions", "Godfrey.Extensions", "Godfrey.Helpers", "Godfrey.Models", "Godfrey.Models.Common", "Godfrey.Models.Configs", "Godfrey.Models.Context", "Godfrey.Models.Quotes", "Godfrey.Models.Servers", "Godfrey.Models.Users");
-                    sopts.AddReferences(AppDomain.CurrentDomain.GetAssemblies().Where(xa => !xa.IsDynamic && !string.IsNullOrWhiteSpace(xa.Location)));
+                    sopts.AddImports("System", "System.Collections.Generic", "System.Linq", "System.Text",
+                                     "System.Threading.Tasks", "Microsoft.EntityFrameworkCore",
+                                     "Microsoft.EntityFrameworkCore.Extensions.Internal", "DSharpPlus",
+                                     "DSharpPlus.CommandsNext", "DSharpPlus.Interactivity", "Godfrey",
+                                     "Godfrey.Collections", "Godfrey.Commands", "Godfrey.Exceptions",
+                                     "Godfrey.Extensions", "Godfrey.Helpers", "Godfrey.Models", "Godfrey.Models.Common",
+                                     "Godfrey.Models.Configs", "Godfrey.Models.Context", "Godfrey.Models.Quotes",
+                                     "Godfrey.Models.Servers", "Godfrey.Models.Users");
+                    sopts.AddReferences(AppDomain.CurrentDomain.GetAssemblies()
+                                                 .Where(xa => !xa.IsDynamic &&
+                                                              !string.IsNullOrWhiteSpace(xa.Location)));
 
                     var script = CSharpScript.Create(cs, sopts, typeof(EvalParameters));
                     script.Compile();
@@ -170,27 +187,27 @@ namespace Godfrey.Commands
                     if (string.IsNullOrWhiteSpace(result?.ReturnValue?.ToString()))
                     {
                         await msg.ModifyAsync(embed: new DiscordEmbedBuilder()
-                                                      .WithTitle("Evaluation successful")
-                                                      .WithDescription("No result was returned.")
-                                                      .WithColor(DiscordColor.Azure)
-                                                      .Build()).ConfigureAwait(false);
+                                                     .WithTitle("Evaluation successful")
+                                                     .WithDescription("No result was returned.")
+                                                     .WithColor(DiscordColor.Azure)
+                                                     .Build()).ConfigureAwait(false);
                         return;
                     }
 
                     await msg.ModifyAsync(embed: new DiscordEmbedBuilder()
-                                                  .WithTitle("Evaluation result")
-                                                  .WithDescription(result.ReturnValue.ToString())
-                                                  .WithColor(DiscordColor.Azure)
-                                                  .Build()).ConfigureAwait(false);
+                                                 .WithTitle("Evaluation result")
+                                                 .WithDescription(result.ReturnValue.ToString())
+                                                 .WithColor(DiscordColor.Azure)
+                                                 .Build()).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-
                     await msg.ModifyAsync(embed: new DiscordEmbedBuilder()
-                                                  .WithTitle("Evaluation result")
-                                                  .WithDescription(string.Concat("**", ex.GetType().ToString(), "**: ", ex.Message))
-                                                  .WithColor(DiscordColor.Red)
-                                                  .Build()).ConfigureAwait(false);
+                                                 .WithTitle("Evaluation result")
+                                                 .WithDescription(string.Concat("**", ex.GetType().ToString(), "**: ",
+                                                                                ex.Message))
+                                                 .WithColor(DiscordColor.Red)
+                                                 .Build()).ConfigureAwait(false);
                 }
             }
         }
@@ -218,7 +235,7 @@ namespace Godfrey.Commands
             User = Message.Author;
             Member = Guild?.GetMemberAsync(User.Id).ConfigureAwait(false).GetAwaiter().GetResult();
             Context = context;
-            
+
             UnitOfWork = uow;
         }
     }

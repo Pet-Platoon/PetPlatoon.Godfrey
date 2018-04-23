@@ -47,10 +47,12 @@ namespace YoutubeExtractor
                 {
                     throw new AudioExtractionException("Unsupported AAC profile.");
                 }
+
                 if (_sampleRateIndex > 12)
                 {
                     throw new AudioExtractionException("Invalid AAC sample rate index.");
                 }
+
                 if (_channelConfig > 6)
                 {
                     throw new AudioExtractionException("Invalid AAC channel configuration.");

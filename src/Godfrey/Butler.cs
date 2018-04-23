@@ -16,9 +16,11 @@ namespace Godfrey
 {
     public partial class Butler
     {
-        public static ButlerConfig ButlerConfig => JsonConvert.DeserializeObject<ButlerConfig>(File.ReadAllText("config.json", new UTF8Encoding(false)));
+        public static ButlerConfig ButlerConfig =>
+                JsonConvert.DeserializeObject<ButlerConfig>(File.ReadAllText("config.json", new UTF8Encoding(false)));
 
-        public static Dictionary<ulong, LoopBackList<ulong>> LastIssuedQuotes { get; set; } = new Dictionary<ulong, LoopBackList<ulong>>();
+        public static Dictionary<ulong, LoopBackList<ulong>> LastIssuedQuotes { get; set; } =
+            new Dictionary<ulong, LoopBackList<ulong>>();
 
         public static Random RandomGenerator { get; private set; }
 
@@ -33,19 +35,19 @@ namespace Godfrey
 
             var dcfg = new DiscordConfiguration
             {
-                AutoReconnect = true,
-                LargeThreshold = 250,
-                LogLevel = LogLevel.Debug,
-                Token = ButlerConfig.Token,
+                    AutoReconnect = true,
+                    LargeThreshold = 250,
+                    LogLevel = LogLevel.Debug,
+                    Token = ButlerConfig.Token,
 #pragma warning disable 618
-                TokenType = ButlerConfig.UseUserToken ? TokenType.User : TokenType.Bot,
+                    TokenType = ButlerConfig.UseUserToken ? TokenType.User : TokenType.Bot,
 #pragma warning restore 618
-                UseInternalLogHandler = true,
-                ShardId = shardId,
-                ShardCount = ButlerConfig.ShardCount,
-                GatewayCompressionLevel = GatewayCompressionLevel.Stream,
-                MessageCacheSize = 50,
-                AutomaticGuildSync = !ButlerConfig.UseUserToken
+                    UseInternalLogHandler = true,
+                    ShardId = shardId,
+                    ShardCount = ButlerConfig.ShardCount,
+                    GatewayCompressionLevel = GatewayCompressionLevel.Stream,
+                    MessageCacheSize = 50,
+                    AutomaticGuildSync = !ButlerConfig.UseUserToken
             };
 
             Client = new DiscordClient(dcfg);
@@ -66,16 +68,16 @@ namespace Godfrey
 
             var cncfg = new CommandsNextConfiguration
             {
-                StringPrefixes = new []{ ButlerConfig.CommandPrefix },
-                EnableDms = true,
-                EnableMentionPrefix = true,
-                CaseSensitive = true,
-                Selfbot = ButlerConfig.UseUserToken,
-                IgnoreExtraArguments = false 
+                    StringPrefixes = new[] { ButlerConfig.CommandPrefix },
+                    EnableDms = true,
+                    EnableMentionPrefix = true,
+                    CaseSensitive = true,
+                    Selfbot = ButlerConfig.UseUserToken,
+                    IgnoreExtraArguments = false
             };
             CommandsNextModule = Client.UseCommandsNext(cncfg);
             CommandsNextModule.RegisterCommands(GetType().GetTypeInfo().Assembly);
-            CommandsNextModule.CommandErrored += OnCommandErrored;;
+            CommandsNextModule.CommandErrored += OnCommandErrored;
         }
 
         public async Task RunAsync()
