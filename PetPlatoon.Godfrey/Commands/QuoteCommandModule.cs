@@ -59,7 +59,7 @@ namespace PetPlatoon.Godfrey.Commands
             if (LoopBackList == null)
             {
                 var quoteCount = await databaseContext.Quotes.CountAsync();
-                LoopBackList = new LoopBackList<ulong>(quoteCount - (int)MathF.Ceiling(quoteCount / 2f));
+                LoopBackList = new LoopBackList<ulong>(quoteCount - (int)MathF.Ceiling(quoteCount * 0.75f));
             }
 
             var quotes = databaseContext.Quotes

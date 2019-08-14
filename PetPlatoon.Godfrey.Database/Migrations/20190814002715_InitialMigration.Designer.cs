@@ -9,7 +9,7 @@ using PetPlatoon.Godfrey.Database;
 namespace PetPlatoon.Godfrey.Database.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20190814000230_InitialMigration")]
+    [Migration("20190814002715_InitialMigration")]
     partial class InitialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -20,7 +20,7 @@ namespace PetPlatoon.Godfrey.Services
             DatabaseContext = databaseContext;
             DiscordService = discordService;
 
-            Timer = new Timer(TimeSpan.FromSeconds(15).TotalMilliseconds);
+            Timer = new Timer(TimeSpan.FromMinutes(15).TotalMilliseconds);
             Timer.Elapsed += Tick;
         }
 
