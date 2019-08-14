@@ -111,8 +111,8 @@ namespace PetPlatoon.Godfrey.Commands
 
             if (quote == null)
             {
-                var author = await message.Author.GetDatabaseUserAsync(databaseContext);
-                var quoter = await ctx.User.GetDatabaseUserAsync(databaseContext);
+                var author = await message.Author.GetUserAsync(databaseContext);
+                var quoter = await ctx.User.GetUserAsync(databaseContext);
 
                 quote = new Quote
                 {
